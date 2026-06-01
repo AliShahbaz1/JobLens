@@ -3,575 +3,1934 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>JobLens — Is This Job Real?</title>
+  <title>JobLens - Is This Job Real?</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #f5f5f7;
+      --bg-solid: #f5f5f7;
+      --bg-elevated: rgba(255, 255, 255, 0.78);
+      --line: rgba(15, 23, 42, 0.08);
+      --line-strong: rgba(15, 23, 42, 0.12);
+      --text: #101828;
+      --text-soft: #475467;
+      --text-muted: #667085;
+      --brand: #2563eb;
+      --brand-soft: rgba(37, 99, 235, 0.12);
+      --green: #0f9f6e;
+      --green-soft: rgba(15, 159, 110, 0.12);
+      --amber: #b76e00;
+      --amber-soft: rgba(183, 110, 0, 0.12);
+      --red: #d14343;
+      --red-soft: rgba(209, 67, 67, 0.12);
+      --indigo: #5850ec;
+      --indigo-soft: rgba(88, 80, 236, 0.12);
+      --shadow-lg: 0 24px 80px rgba(15, 23, 42, 0.08);
+      --shadow-md: 0 12px 40px rgba(15, 23, 42, 0.08);
+      --header-bg: linear-gradient(180deg, rgba(245, 245, 247, 0.92), rgba(245, 245, 247, 0.6));
+      --hero-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.76));
+      --surface: rgba(255, 255, 255, 0.88);
+      --surface-strong: rgba(255, 255, 255, 0.94);
+      --surface-soft: rgba(255, 255, 255, 0.74);
+      --mesh-line: rgba(15, 23, 42, 0.03);
+      --mesh-mask: rgba(0, 0, 0, 0.22);
+      --header-pill-bg: rgba(255, 255, 255, 0.74);
+      --toggle-bg: rgba(255, 255, 255, 0.84);
+      --toggle-active: rgba(37, 99, 235, 0.14);
+      --toggle-text: var(--text-soft);
+    }
+
+    body.dark-mode {
+      --bg: #0b1221;
+      --bg-solid: #0b1221;
+      --bg-elevated: rgba(12, 20, 36, 0.72);
+      --line: rgba(148, 163, 184, 0.2);
+      --line-strong: rgba(148, 163, 184, 0.28);
+      --text: #e2e8f0;
+      --text-soft: #cbd5e1;
+      --text-muted: #94a3b8;
+      --brand: #60a5fa;
+      --brand-soft: rgba(96, 165, 250, 0.22);
+      --green: #34d399;
+      --green-soft: rgba(52, 211, 153, 0.2);
+      --amber: #fbbf24;
+      --amber-soft: rgba(251, 191, 36, 0.2);
+      --red: #f87171;
+      --red-soft: rgba(248, 113, 113, 0.2);
+      --indigo: #818cf8;
+      --indigo-soft: rgba(129, 140, 248, 0.2);
+      --shadow-lg: 0 28px 90px rgba(2, 8, 23, 0.56);
+      --shadow-md: 0 14px 44px rgba(2, 8, 23, 0.45);
+      --header-bg: linear-gradient(180deg, rgba(11, 18, 33, 0.88), rgba(11, 18, 33, 0.58));
+      --hero-bg: linear-gradient(135deg, rgba(16, 25, 45, 0.94), rgba(13, 20, 36, 0.8));
+      --surface: rgba(17, 27, 48, 0.86);
+      --surface-strong: rgba(19, 31, 54, 0.9);
+      --surface-soft: rgba(17, 27, 48, 0.7);
+      --mesh-line: rgba(148, 163, 184, 0.1);
+      --mesh-mask: rgba(0, 0, 0, 0.46);
+      --header-pill-bg: rgba(20, 32, 55, 0.76);
+      --toggle-bg: rgba(17, 27, 48, 0.9);
+      --toggle-active: rgba(96, 165, 250, 0.22);
+      --toggle-text: #dbeafe;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      max-width: 100%;
+      overflow-x: hidden;
+    }
 
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #0a0a0f;
-      color: #e0e0e0;
+      font-family: 'Manrope', sans-serif;
       min-height: 100vh;
+      max-width: 100%;
+      overflow-x: hidden;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(37, 99, 235, 0.16), transparent 26%),
+        radial-gradient(circle at top right, rgba(88, 80, 236, 0.12), transparent 24%),
+        linear-gradient(180deg, #fbfbfc 0%, var(--bg) 42%, #eef2f6 100%);
+      transition: background 0.28s ease, color 0.2s ease;
+    }
+
+    body.dark-mode {
+      background:
+        radial-gradient(circle at top left, rgba(96, 165, 250, 0.18), transparent 28%),
+        radial-gradient(circle at top right, rgba(129, 140, 248, 0.16), transparent 26%),
+        linear-gradient(180deg, #101b33 0%, var(--bg) 46%, #070d19 100%);
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image: linear-gradient(var(--mesh-line) 1px, transparent 1px), linear-gradient(90deg, var(--mesh-line) 1px, transparent 1px);
+      background-size: 40px 40px;
+      mask-image: linear-gradient(180deg, var(--mesh-mask), transparent 70%);
+    }
+
+    .page-shell {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding-bottom: 56px;
+      position: relative;
+      z-index: 1;
     }
 
     header {
-      padding: 20px 40px;
-      border-bottom: 1px solid #1e1e2e;
       display: flex;
       align-items: center;
-      gap: 12px;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 12px 16px;
+      position: sticky;
+      top: 8px;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: color-mix(in srgb, var(--surface-strong) 88%, transparent);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 12px 30px rgba(2, 8, 23, 0.14);
     }
 
-    .logo { font-size: 22px; font-weight: 700; color: #fff; }
-    .logo span { color: #6c63ff; }
-    .tagline { font-size: 13px; color: #555; margin-left: auto; }
-
-    .hero {
-      text-align: center;
-      padding: 50px 20px 30px;
-    }
-
-    .hero h1 {
-      font-size: 40px;
-      font-weight: 800;
-      color: #fff;
-      margin-bottom: 10px;
-    }
-
-    .hero h1 span { color: #6c63ff; }
-
-    .hero p {
-      font-size: 16px;
-      color: #666;
-      max-width: 480px;
-      margin: 0 auto 32px;
-      line-height: 1.6;
-    }
-
-    .input-area {
-      max-width: 680px;
-      margin: 0 auto;
-    }
-
-    .search-box {
-      display: flex;
+    .header-actions {
+      display: inline-flex;
+      align-items: center;
       gap: 10px;
     }
 
-    .search-box input {
-      flex: 1;
-      padding: 15px 18px;
-      background: #13131f;
-      border: 1px solid #2a2a3e;
-      border-radius: 12px;
-      color: #fff;
-      font-size: 14px;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    .search-box input:focus { border-color: #6c63ff; }
-    .search-box input::placeholder { color: #3a3a5a; }
-
-    .search-box button {
-      padding: 15px 24px;
-      background: #6c63ff;
-      color: #fff;
-      border: none;
-      border-radius: 12px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s;
-      white-space: nowrap;
-    }
-
-    .search-box button:hover { background: #5a52e0; }
-    .search-box button:disabled { background: #2a2a3e; color: #555; cursor: not-allowed; }
-
-    .paste-toggle {
-      margin-top: 10px;
-      text-align: left;
-    }
-
-    .paste-toggle summary {
-      color: #555;
-      font-size: 12px;
-      cursor: pointer;
-      padding: 6px 0;
-      user-select: none;
-      list-style: none;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .paste-toggle summary:hover { color: #6c63ff; }
-
-    .paste-toggle summary::before {
-      content: '▶';
-      font-size: 9px;
-      transition: transform 0.2s;
-    }
-
-    .paste-toggle[open] summary::before { transform: rotate(90deg); }
-
-    .paste-toggle textarea {
-      width: 100%;
-      margin-top: 8px;
-      padding: 14px;
-      background: #13131f;
-      border: 1px solid #2a2a3e;
-      border-radius: 12px;
-      color: #bbb;
-      font-size: 13px;
-      height: 130px;
-      resize: vertical;
-      outline: none;
-      font-family: inherit;
-      line-height: 1.5;
-      transition: border-color 0.2s;
-    }
-
-    .paste-toggle textarea:focus { border-color: #6c63ff; }
-    .paste-toggle textarea::placeholder { color: #333; }
-
-    .status {
-      text-align: center;
-      margin: 20px auto 0;
-      max-width: 680px;
-      font-size: 13px;
-      color: #6c63ff;
-      min-height: 18px;
-    }
-
-    /* Result card */
-    .result-card {
-      max-width: 680px;
-      margin: 16px auto 40px;
-      background: #13131f;
-      border: 1px solid #2a2a3e;
-      border-radius: 16px;
-      overflow: hidden;
-      display: none;
-    }
-
-    .verdict-banner {
-      padding: 22px 26px;
+    .brand-block {
       display: flex;
       align-items: center;
       gap: 14px;
     }
 
-    .verdict-banner.APPLY    { background: #0a2118; border-bottom: 1px solid #144d2e; }
-    .verdict-banner.CAUTION  { background: #1e1600; border-bottom: 1px solid #4a3500; }
-    .verdict-banner.GHOST    { background: #1e0a0a; border-bottom: 1px solid #4a1515; }
-    .verdict-banner.UNSCRAPABLE { background: #111128; border-bottom: 1px solid #2a2a5a; }
+    .brand-mark {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(145deg, #ffffff, #e7eefb);
+      border: 1px solid rgba(37, 99, 235, 0.12);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 8px 20px rgba(37, 99, 235, 0.08);
+      color: var(--brand);
+    }
 
-    .verdict-emoji { font-size: 32px; }
+    .logo {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
 
-    .verdict-text h2 { font-size: 20px; font-weight: 700; }
-    .verdict-text.APPLY h2       { color: #4caf87; }
-    .verdict-text.CAUTION h2     { color: #ffb74d; }
-    .verdict-text.GHOST h2       { color: #ef5350; }
-    .verdict-text.UNSCRAPABLE h2 { color: #7c7cff; }
+    .logo strong {
+      font-size: 1.05rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
 
-    .verdict-text p { font-size: 13px; color: #666; margin-top: 4px; line-height: 1.5; max-width: 460px; }
+    .logo span {
+      font-size: 0.83rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
 
-    .score-ring {
-      margin-left: auto;
-      min-width: 56px;
-      height: 56px;
+    .github-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: var(--header-pill-bg);
+      border: 1px solid var(--line);
+      color: var(--text-soft);
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-decoration: none;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+      transition: transform 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+    }
+
+    .github-btn:hover {
+      transform: translateY(-1px);
+      border-color: var(--line-strong);
+      color: var(--text);
+    }
+
+    .github-icon {
+      width: 16px;
+      height: 16px;
+      display: inline-block;
+      fill: currentColor;
+      flex: 0 0 auto;
+    }
+
+    .theme-toggle {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--toggle-bg);
+      color: var(--toggle-text);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.18s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+
+    .theme-toggle:hover {
+      transform: translateY(-1px);
+      border-color: var(--line-strong);
+    }
+
+    .theme-toggle.active {
+      background: var(--toggle-active);
+      border-color: color-mix(in srgb, var(--brand) 40%, transparent);
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 28px;
+      padding-top: 22px;
+    }
+
+    main > * {
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    .hero-panel {
+      border-radius: 36px;
+      padding: 44px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.76));
+      background: var(--hero-bg);
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      box-shadow: var(--shadow-lg);
+      backdrop-filter: blur(22px);
+      overflow: hidden;
+      position: relative;
+      display: grid;
+      gap: 16px;
+      scroll-margin-top: 92px;
+    }
+
+    .hero-panel::after {
+      content: '';
+      position: absolute;
+      inset: auto -80px -120px auto;
+      width: 320px;
+      height: 320px;
       border-radius: 50%;
+      background: radial-gradient(circle, rgba(37, 99, 235, 0.14), transparent 64%);
+      pointer-events: none;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+      gap: 28px;
+      align-items: start;
+      position: relative;
+      z-index: 1;
+      transform-origin: top center;
+      transition: transform 0.32s ease, opacity 0.28s ease;
+    }
+
+    .hero-grid > * {
+      min-width: 0;
+    }
+
+    .hero-panel.interactive-open .hero-grid {
+      transform: scale(0.965);
+      opacity: 0.72;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: var(--brand-soft);
+      color: var(--brand);
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      font-size: clamp(3rem, 6vw, 5.2rem);
+      line-height: 0.95;
+      letter-spacing: -0.06em;
+      margin-bottom: 18px;
+      max-width: 9ch;
+    }
+
+    .hero-copy p {
+      max-width: 62ch;
+      font-size: 1.05rem;
+      line-height: 1.75;
+      color: var(--text-soft);
+      margin-bottom: 28px;
+    }
+
+    .hero-ticker {
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+      max-width: 100%;
+      height: 56px;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      isolation: isolate;
+    }
+
+    .hero-ticker-row {
+      grid-column: 1 / -1;
+      margin-top: 2px;
+      position: relative;
+      z-index: 1;
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    .mobile-ticker-section {
+      display: none;
+      margin-top: -8px;
+    }
+
+    .hero-ticker::before,
+    .hero-ticker::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 52px;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .hero-ticker::before {
+      left: 0;
+      background: linear-gradient(90deg, var(--bg-solid), transparent);
+    }
+
+    .hero-ticker::after {
+      right: 0;
+      background: linear-gradient(270deg, var(--bg-solid), transparent);
+    }
+
+    .ticker-track {
+      position: absolute;
+      left: 0;
+      top: 0;
+      display: flex;
+      width: max-content;
+      min-width: 100%;
+      animation: tickerMove 34s linear infinite;
+      will-change: transform;
+    }
+
+    .hero-ticker:hover .ticker-track {
+      animation-play-state: paused;
+    }
+
+    .ticker-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      flex-shrink: 0;
+      height: 56px;
+    }
+
+    .ticker-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--bg-elevated) 88%, transparent);
+      white-space: nowrap;
+      font-size: 0.83rem;
+      font-weight: 700;
+      color: var(--text-soft);
+    }
+
+    .ticker-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--text-muted);
+      flex: 0 0 auto;
+    }
+
+    .ticker-dot.clean { background: #2ecc71; }
+    .ticker-dot.suspicious { background: #f1c40f; }
+    .ticker-dot.flagged { background: #ef4444; }
+
+    .ticker-domain {
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .ticker-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-size: 0.69rem;
+      letter-spacing: 0.04em;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .ticker-badge.clean {
+      color: var(--green);
+      border-color: color-mix(in srgb, var(--green) 50%, transparent);
+      background: var(--green-soft);
+    }
+
+    .ticker-badge.suspicious {
+      color: var(--amber);
+      border-color: color-mix(in srgb, var(--amber) 50%, transparent);
+      background: var(--amber-soft);
+    }
+
+    .ticker-badge.flagged {
+      color: var(--red);
+      border-color: color-mix(in srgb, var(--red) 50%, transparent);
+      background: var(--red-soft);
+    }
+
+    @keyframes tickerMove {
+      from {
+        transform: translateX(0);
+      }
+      to {
+        transform: translateX(-50%);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .ticker-track {
+        animation: none;
+      }
+
+      .hero-ticker {
+        overflow-x: auto;
+      }
+
+      .hero-ticker::before,
+      .hero-ticker::after {
+        display: none;
+      }
+    }
+
+    .hero-side {
+      display: grid;
+      gap: 16px;
+    }
+
+    .insight-card,
+    .search-card,
+    .result-card,
+    .bottom-panel {
+      background: var(--bg-elevated);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.66);
+      box-shadow: var(--shadow-md);
+    }
+
+    .insight-card {
+      border-radius: 28px;
+      padding: 24px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .insight-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .insight-top strong {
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    .mini-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .mini-tile {
+      padding: 14px;
+      border-radius: 18px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+    }
+
+    .mini-tile span {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .mini-tile strong {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+    }
+
+    .mini-tile.apply strong { color: var(--green); }
+    .mini-tile.caution strong { color: var(--amber); }
+    .mini-tile.ghost strong { color: var(--red); }
+
+    .insight-note {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: rgba(16, 24, 40, 0.04);
+      color: var(--text-soft);
+      line-height: 1.6;
+      font-size: 0.94rem;
+    }
+
+    .search-card {
+      border-radius: 32px;
+      padding: 28px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .hero-search-card {
+      margin-top: 2px;
+      padding: 18px;
+      border-radius: 24px;
+      min-height: 124px;
+      max-height: 124px;
+      border-color: transparent;
+      overflow: hidden;
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      transition: max-height 0.45s ease, padding 0.28s ease, border-radius 0.28s ease;
+    }
+
+    .hero-search-card .search-box {
+      width: min(980px, 100%);
+      margin: 0;
+    }
+
+    .hero-search-extra {
+      width: min(940px, 100%);
+      margin: 0 auto;
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      transform: translateY(-8px);
+      pointer-events: none;
+      transition: max-height 0.3s ease, margin-top 0.25s ease, opacity 0.22s ease, transform 0.25s ease;
+    }
+
+    .hero-panel.interactive-open .hero-search-card {
+      min-height: 0;
+      max-height: 680px;
+      padding: 30px 28px 26px;
+      border-radius: 30px;
+      border-color: rgba(255, 255, 255, 0.66);
+      display: block;
+    }
+
+    .hero-panel.interactive-open .hero-search-extra {
+      max-height: 520px;
+      margin-top: 14px;
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .panel-heading {
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 18px;
-      font-weight: 800;
-      border: 3px solid;
+      gap: 16px;
     }
 
-    .score-ring.APPLY       { border-color: #4caf87; color: #4caf87; }
-    .score-ring.CAUTION     { border-color: #ffb74d; color: #ffb74d; }
-    .score-ring.GHOST       { border-color: #ef5350; color: #ef5350; }
-    .score-ring.UNSCRAPABLE { border-color: #7c7cff; color: #7c7cff; }
+    .panel-heading > div {
+      width: 100%;
+    }
 
-    .result-body { padding: 22px 26px; }
+    .panel-heading strong {
+      display: block;
+      font-size: 1.2rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      margin-bottom: 4px;
+    }
+
+    .panel-heading p {
+      color: var(--text-soft);
+      line-height: 1.6;
+      font-size: 0.95rem;
+      max-width: 72ch;
+    }
+
+    .panel-subnote {
+      margin-top: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: var(--text-soft);
+    }
+
+    .search-stack {
+      display: grid;
+      gap: 16px;
+    }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 14px 12px 18px;
+      border-radius: 22px;
+      background: var(--surface-strong);
+      border: 1px solid var(--line-strong);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+
+    .search-box input {
+      flex: 1;
+      min-width: 0;
+      border: none;
+      background: transparent;
+      color: var(--text);
+      font-size: 1rem;
+      font-family: inherit;
+      outline: none;
+    }
+
+    .search-box input::placeholder,
+    .paste-toggle textarea::placeholder {
+      color: #98a2b3;
+    }
+
+    .search-box button {
+      border: none;
+      border-radius: 16px;
+      background: linear-gradient(180deg, #1d4ed8, #2563eb);
+      color: #ffffff;
+      padding: 15px 20px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 0.95rem;
+      font-weight: 800;
+      font-family: inherit;
+      cursor: pointer;
+      box-shadow: 0 14px 30px rgba(37, 99, 235, 0.22);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+    }
+
+    .search-box button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 18px 34px rgba(37, 99, 235, 0.28);
+    }
+
+    .search-box button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .paste-toggle {
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      background: var(--surface-soft);
+      overflow: hidden;
+    }
+
+    .paste-toggle summary {
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 18px;
+      cursor: pointer;
+      font-weight: 800;
+      color: var(--text-soft);
+      user-select: none;
+    }
+
+    .paste-toggle summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .paste-toggle .summary-label {
+      flex: 1;
+    }
+
+    .paste-toggle .summary-label,
+    .panel-heading p,
+    .verdict-text h2,
+    .verdict-text p,
+    .meta-item strong,
+    .flags-box li,
+    .recommendation span,
+    .h-company,
+    .h-date {
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .paste-toggle .summary-arrow {
+      transition: transform 0.2s ease;
+      color: var(--text-muted);
+    }
+
+    .paste-toggle[open] .summary-arrow {
+      transform: rotate(180deg);
+    }
+
+    .paste-toggle textarea {
+      width: calc(100% - 24px);
+      margin: 0 12px 12px;
+      min-height: 150px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      resize: vertical;
+      padding: 16px 18px;
+      outline: none;
+      font: inherit;
+      line-height: 1.7;
+      color: var(--text);
+      background: var(--surface-strong);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .paste-toggle textarea:focus {
+      border-color: rgba(37, 99, 235, 0.3);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
+    }
+
+    .status {
+      min-height: 22px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .status.error {
+      color: var(--red);
+    }
+
+    .result-card {
+      display: none;
+      border-radius: 32px;
+      overflow: hidden;
+    }
+
+    .verdict-banner {
+      padding: 28px 30px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      border-bottom: 1px solid transparent;
+    }
+
+    .verdict-banner.APPLY {
+      background: linear-gradient(180deg, rgba(15, 159, 110, 0.15), rgba(255, 255, 255, 0.62));
+      border-bottom-color: rgba(15, 159, 110, 0.12);
+    }
+
+    .verdict-banner.CAUTION {
+      background: linear-gradient(180deg, rgba(183, 110, 0, 0.15), rgba(255, 255, 255, 0.62));
+      border-bottom-color: rgba(183, 110, 0, 0.12);
+    }
+
+    .verdict-banner.GHOST {
+      background: linear-gradient(180deg, rgba(209, 67, 67, 0.15), rgba(255, 255, 255, 0.62));
+      border-bottom-color: rgba(209, 67, 67, 0.12);
+    }
+
+    .verdict-banner.UNSCRAPABLE {
+      background: linear-gradient(180deg, rgba(88, 80, 236, 0.15), rgba(255, 255, 255, 0.62));
+      border-bottom-color: rgba(88, 80, 236, 0.12);
+    }
+
+    .verdict-icon {
+      width: 64px;
+      height: 64px;
+      flex: 0 0 64px;
+      border-radius: 20px;
+      display: grid;
+      place-items: center;
+      background: rgba(255, 255, 255, 0.82);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+
+    .verdict-text {
+      min-width: 0;
+    }
+
+    .verdict-text h2 {
+      font-size: 1.55rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      margin-bottom: 6px;
+    }
+
+    .verdict-text.APPLY h2 { color: var(--green); }
+    .verdict-text.CAUTION h2 { color: var(--amber); }
+    .verdict-text.GHOST h2 { color: var(--red); }
+    .verdict-text.UNSCRAPABLE h2 { color: var(--indigo); }
+
+    .verdict-text p {
+      color: var(--text-soft);
+      line-height: 1.7;
+      max-width: 58ch;
+    }
+
+    .score-ring {
+      margin-left: auto;
+      width: 82px;
+      height: 82px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      background: rgba(255, 255, 255, 0.92);
+      border: 6px solid transparent;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+
+    .score-ring.APPLY { color: var(--green); border-color: rgba(15, 159, 110, 0.18); }
+    .score-ring.CAUTION { color: var(--amber); border-color: rgba(183, 110, 0, 0.18); }
+    .score-ring.GHOST { color: var(--red); border-color: rgba(209, 67, 67, 0.18); }
+    .score-ring.UNSCRAPABLE { color: var(--indigo); border-color: rgba(88, 80, 236, 0.18); }
+
+    .result-body {
+      padding: 28px 30px 30px;
+      display: grid;
+      gap: 22px;
+    }
 
     .meta-row {
-      display: flex;
-      gap: 20px;
-      margin-bottom: 18px;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
     }
 
-    .meta-item { font-size: 12px; color: #555; }
-    .meta-item strong { color: #ccc; display: block; font-size: 14px; margin-bottom: 2px; }
-
-    .flags-row { display: flex; gap: 12px; margin-bottom: 16px; }
-
-    .flags-box {
-      flex: 1;
-      background: #0a0a0f;
-      border-radius: 10px;
-      padding: 12px 14px;
-    }
-
-    .flags-box h4 {
-      font-size: 11px;
+    .meta-item {
+      padding: 16px 18px;
+      border-radius: 18px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 1px;
+      letter-spacing: 0.04em;
+    }
+
+    .meta-item strong {
+      display: block;
       margin-bottom: 8px;
-    }
-
-    .flags-box.green h4 { color: #4caf87; }
-    .flags-box.red h4   { color: #ef5350; }
-
-    .flags-box ul { list-style: none; }
-
-    .flags-box ul li {
-      font-size: 12px;
-      color: #888;
-      padding: 3px 0;
+      font-size: 1rem;
       line-height: 1.4;
+      color: var(--text);
+      text-transform: none;
+      letter-spacing: -0.02em;
+      font-weight: 800;
     }
 
-    .flags-box.green ul li::before { content: '✓ '; color: #4caf87; }
-    .flags-box.red ul li::before   { content: '✗ '; color: #ef5350; }
-    .flags-box ul li:empty { display: none; }
+    .flags-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
 
+    .flags-box,
     .recommendation {
-      background: #0a0a0f;
-      border-radius: 10px;
-      padding: 14px;
-      font-size: 13px;
-      color: #999;
+      border-radius: 22px;
+      padding: 22px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+    }
+
+    .flags-box h4,
+    .recommendation strong {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.88rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 14px;
+    }
+
+    .flags-box.green h4 { color: var(--green); }
+    .flags-box.red h4 { color: var(--red); }
+
+    .flags-box ul {
+      list-style: none;
+      display: grid;
+      gap: 10px;
+    }
+
+    .flags-box li {
+      position: relative;
+      padding-left: 28px;
+      color: var(--text-soft);
       line-height: 1.6;
-      border-left: 3px solid #6c63ff;
+      min-height: 18px;
+    }
+
+    .flags-box li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 3px;
+      width: 18px;
+      height: 18px;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 18px 18px;
+    }
+
+    .flags-box.green li::before {
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%230f9f6e" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m20 6-11 11-5-5"/></svg>');
+    }
+
+    .flags-box.red li::before {
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23d14343" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>');
+    }
+
+    .flags-box li:empty {
+      display: none;
     }
 
     .recommendation strong {
-      color: #6c63ff;
+      color: var(--brand);
+    }
+
+    .recommendation span {
       display: block;
-      margin-bottom: 5px;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
+      color: var(--text-soft);
+      line-height: 1.75;
     }
 
-    .source-badge {
-      display: inline-block;
-      font-size: 10px;
-      padding: 2px 7px;
-      border-radius: 4px;
-      margin-left: 8px;
-      vertical-align: middle;
+    .bottom-panel {
+      border-radius: 32px;
+      padding: 28px;
+      display: grid;
+      gap: 22px;
     }
 
-    .source-badge.scraped { background: #0a2118; color: #4caf87; }
-    .source-badge.pasted  { background: #1e1600; color: #ffb74d; }
-    .source-badge.none    { background: #1e0a28; color: #aa88ff; }
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
 
-    /* Stats + History */
-    .bottom-section {
-      max-width: 680px;
-      margin: 0 auto 60px;
+    .section-header strong {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    .section-header span {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      font-weight: 700;
     }
 
     .stats-row {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 24px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
     }
 
     .stat-box {
-      flex: 1;
-      background: #13131f;
-      border: 1px solid #2a2a3e;
-      border-radius: 10px;
-      padding: 14px 10px;
-      text-align: center;
+      padding: 18px;
+      border-radius: 20px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      display: grid;
+      gap: 12px;
     }
 
-    .stat-box .num  { font-size: 26px; font-weight: 800; }
-    .stat-box .lbl  { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
-    .stat-box.total   .num { color: #6c63ff; }
-    .stat-box.apply   .num { color: #4caf87; }
-    .stat-box.caution .num { color: #ffb74d; }
-    .stat-box.ghost   .num { color: #ef5350; }
-
-    .section-header {
-      font-size: 13px;
-      color: #444;
-      margin-bottom: 12px;
+    .stat-box .stat-top {
       display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .stat-box .num {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.06em;
+      line-height: 1;
+    }
+
+    .stat-box .lbl {
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+
+    .stat-box.total .num { color: var(--brand); }
+    .stat-box.apply .num { color: var(--green); }
+    .stat-box.caution .num { color: var(--amber); }
+    .stat-box.ghost .num { color: var(--red); }
+
+    .history-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .history-controls {
+      display: flex;
+      justify-content: center;
+    }
+
+    .history-toggle-btn {
+      display: inline-flex;
       align-items: center;
       gap: 8px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text-soft);
+      border-radius: 999px;
+      padding: 9px 14px;
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: border-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
     }
 
-    .history-list { display: flex; flex-direction: column; gap: 8px; }
+    .history-toggle-btn:hover {
+      border-color: var(--line-strong);
+      color: var(--text);
+      transform: translateY(-1px);
+    }
 
     .history-item {
-      background: #13131f;
-      border: 1px solid #1e1e2e;
-      border-radius: 10px;
-      padding: 12px 16px;
-      display: flex;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+      gap: 14px;
       align-items: center;
-      gap: 10px;
-      transition: border-color 0.2s;
+      padding: 16px 18px;
+      border-radius: 20px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
     }
 
-    .history-item:hover { border-color: #6c63ff; }
+    .history-item:hover {
+      transform: translateY(-1px);
+      border-color: rgba(37, 99, 235, 0.18);
+      box-shadow: 0 12px 26px rgba(15, 23, 42, 0.06);
+    }
 
-    .h-verdict {
-      font-size: 10px;
-      font-weight: 700;
-      padding: 3px 7px;
-      border-radius: 5px;
+    .h-verdict,
+    .cached-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 0.76rem;
+      font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.05em;
       white-space: nowrap;
     }
 
-    .h-verdict.APPLY       { background: #0a2118; color: #4caf87; }
-    .h-verdict.CAUTION     { background: #1e1600; color: #ffb74d; }
-    .h-verdict.GHOST       { background: #1e0a0a; color: #ef5350; }
-    .h-verdict.UNSCRAPABLE { background: #111128; color: #7c7cff; }
+    .h-verdict.APPLY { background: var(--green-soft); color: var(--green); }
+    .h-verdict.CAUTION { background: var(--amber-soft); color: var(--amber); }
+    .h-verdict.GHOST { background: var(--red-soft); color: var(--red); }
+    .h-verdict.UNSCRAPABLE { background: var(--indigo-soft); color: var(--indigo); }
 
-    .h-role    { font-size: 13px; color: #ccc; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .h-company { font-size: 12px; color: #555; white-space: nowrap; }
-    .h-date    { font-size: 11px; color: #333; white-space: nowrap; }
+    .h-role {
+      min-width: 0;
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .h-company,
+    .h-date {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
 
     .cached-badge {
-      font-size: 10px;
-      background: #1a1a2e;
-      color: #6c63ff;
-      padding: 2px 6px;
-      border-radius: 4px;
+      background: rgba(37, 99, 235, 0.1);
+      color: var(--brand);
     }
 
     .empty-history {
+      padding: 38px 24px;
+      border-radius: 22px;
+      border: 1px dashed rgba(15, 23, 42, 0.12);
       text-align: center;
-      color: #333;
-      font-size: 13px;
-      padding: 30px;
+      color: var(--text-muted);
+      background: color-mix(in srgb, var(--bg-solid) 28%, transparent);
+      display: grid;
+      gap: 10px;
+      justify-items: center;
+      line-height: 1.7;
+    }
+
+    @media (max-width: 1080px) {
+      .hero-grid {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        max-width: none;
+      }
+    }
+
+    @media (max-width: 860px) {
+      .page-shell {
+        width: min(100% - 20px, 1180px);
+      }
+
+      header {
+        padding: 10px 12px;
+      }
+
+      .hero-panel,
+      .search-card,
+      .bottom-panel {
+        padding: 22px;
+        border-radius: 26px;
+      }
+
+      .meta-row,
+      .stats-row,
+      .flags-row,
+      .mini-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .history-item {
+        grid-template-columns: 1fr;
+        justify-items: start;
+      }
+
+      .score-ring {
+        margin-left: 0;
+      }
+
+      .verdict-banner {
+        flex-wrap: wrap;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .github-btn .github-label {
+        display: none;
+      }
+
+      .header-actions {
+        margin-left: auto;
+      }
+
+      .section-header {
+        flex-wrap: wrap;
+        align-items: flex-start;
+      }
+
+      .section-header span {
+        width: 100%;
+      }
+
+      .hero-panel {
+        padding: 20px;
+      }
+
+      .page-shell,
+      .hero-panel,
+      .hero-grid,
+      .hero-search-card,
+      .search-box {
+        width: 100%;
+        max-width: 100%;
+      }
+
+      .hero-grid {
+        gap: 18px;
+      }
+
+      .hero-ticker-row {
+        margin-top: 0;
+      }
+
+      .hero-ticker-desktop {
+        display: none;
+      }
+
+      .mobile-ticker-section {
+        display: block;
+      }
+
+      .ticker-row {
+        padding: 10px 8px;
+        gap: 8px;
+        height: 52px;
+      }
+
+      .ticker-item {
+        padding: 7px 9px;
+        font-size: 0.78rem;
+      }
+
+      .hero-ticker {
+        height: 52px;
+      }
+
+      h1 {
+        font-size: 2.9rem;
+      }
+
+      .search-card,
+      .bottom-panel,
+      .result-body,
+      .verdict-banner {
+        padding: 18px;
+      }
+
+      .hero-search-card {
+        padding: 14px;
+        min-height: 118px;
+        max-height: 118px;
+      }
+
+      .hero-panel.interactive-open .hero-search-card {
+        min-height: 0;
+        padding: 20px 16px 18px;
+        max-height: 760px;
+      }
+
+      .hero-search-extra {
+        margin-top: 10px;
+      }
+
+      .hero-panel.interactive-open .hero-search-extra {
+        max-height: 620px;
+      }
+
+      .search-box {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .search-box button {
+        width: 100%;
+      }
+
+      .meta-row,
+      .stats-row,
+      .flags-row,
+      .mini-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .h-role,
+      .h-company,
+      .h-date {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+      }
+
+      .brand-mark {
+        width: 40px;
+        height: 40px;
+      }
     }
   </style>
 </head>
 <body>
-
-<header>
-  <div class="logo">Job<span>Lens</span></div>
-  <div class="tagline">Don't apply blind. Investigate first.</div>
-</header>
-
-<div class="hero">
-  <h1>Is this job <span>real?</span></h1>
-  <p>Paste any job posting URL. Our agent investigates before you waste time applying to ghost jobs.</p>
-
-  <div class="input-area">
-    <div class="search-box">
-      <input type="text" id="urlInput" placeholder="Paste job posting URL here..." />
-      <button id="investigateBtn" onclick="investigate()">Investigate</button>
-    </div>
-
-    <details class="paste-toggle" id="pasteDetails">
-      <summary>💬 Site blocking scraper? Paste the job description here instead</summary>
-      <textarea id="pastedText"
-        placeholder="Paste the full job description text here. Works with any site — Oracle HCM, Workday, Greenhouse, Taleo, or any ATS portal that blocks bots..."></textarea>
-    </details>
-  </div>
-</div>
-
-<div class="status" id="status"></div>
-
-<div class="result-card" id="resultCard">
-  <div class="verdict-banner" id="verdictBanner">
-    <div class="verdict-emoji" id="verdictEmoji"></div>
-    <div class="verdict-text" id="verdictTextBox">
-      <h2 id="verdictLabel"></h2>
-      <p id="verdictReason"></p>
-    </div>
-    <div class="score-ring" id="scoreRing"></div>
-  </div>
-  <div class="result-body">
-    <div class="meta-row">
-      <div class="meta-item"><strong id="metaRole">—</strong>Role</div>
-      <div class="meta-item"><strong id="metaCompany">—</strong>Company</div>
-      <div class="meta-item"><strong id="metaLocation">—</strong>Location</div>
-      <div class="meta-item"><strong id="metaPosted">—</strong>Posted</div>
-    </div>
-    <div class="flags-row">
-      <div class="flags-box green">
-        <h4>Green Flags</h4>
-        <ul id="greenFlags"></ul>
+  <div class="page-shell">
+    <header>
+      <div class="brand-block">
+        <div class="brand-mark" aria-hidden="true">
+          <i data-lucide="scan-search" style="width: 22px; height: 22px;"></i>
+        </div>
+        <div class="logo">
+          <strong>JobLens</strong>
+          <span>Clarity before you apply</span>
+        </div>
       </div>
-      <div class="flags-box red">
-        <h4>Red Flags</h4>
-        <ul id="redFlags"></ul>
+      <div class="header-actions">
+        <a class="github-btn" href="https://github.com/AliShahbaz1/JobLens" target="_blank" rel="noopener noreferrer" aria-label="Open GitHub repository">
+          <svg class="github-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.2 11.39.6.11.82-.26.82-.58v-2.24c-3.34.73-4.04-1.42-4.04-1.42-.54-1.38-1.34-1.74-1.34-1.74-1.1-.76.08-.74.08-.74 1.22.09 1.86 1.25 1.86 1.25 1.07 1.86 2.82 1.32 3.5 1.01.11-.78.42-1.32.76-1.62-2.67-.31-5.47-1.34-5.47-5.97 0-1.32.47-2.4 1.24-3.24-.12-.31-.54-1.56.12-3.25 0 0 1.01-.32 3.3 1.24.96-.27 1.98-.4 3-.4 1.02 0 2.05.14 3 .4 2.29-1.56 3.3-1.24 3.3-1.24.66 1.69.24 2.94.12 3.25.77.84 1.24 1.92 1.24 3.24 0 4.64-2.81 5.65-5.49 5.96.43.38.82 1.11.82 2.24v3.32c0 .32.22.69.83.58C20.56 21.79 24 17.29 24 12c0-6.63-5.37-12-12-12Z"></path>
+          </svg>
+          <span class="github-label">GitHub</span>
+        </a>
+        <button class="theme-toggle" id="themeToggle" type="button" aria-label="Enable dark mode" title="Enable dark mode" onclick="toggleTheme()">
+          <i id="themeToggleIcon" data-lucide="moon" style="width: 18px; height: 18px;"></i>
+        </button>
       </div>
-    </div>
-    <div class="recommendation">
-      <strong>Agent Recommendation</strong>
-      <span id="recommendation"></span>
-    </div>
+    </header>
+
+    <main>
+      <section class="hero-panel" id="heroPanel">
+        <div class="hero-grid">
+          <div class="hero-copy">
+            <div class="eyebrow">
+              <i data-lucide="sparkles" style="width: 15px; height: 15px;"></i>
+              Premium screening for questionable listings
+            </div>
+            <h1>Know which roles deserve your time.</h1>
+            <p>Drop in a job post and JobLens surfaces the trust signals, missing context, and warning patterns that usually stay buried in vague recruiting copy.</p>
+          </div>
+
+          <div class="hero-side">
+            <div class="insight-card">
+              <div class="insight-top">
+                <strong>What JobLens looks for</strong>
+                <i data-lucide="activity" style="width: 18px; height: 18px; color: var(--brand);"></i>
+              </div>
+              <div class="mini-grid">
+                <div class="mini-tile apply">
+                  <span>Credibility</span>
+                  <strong>92</strong>
+                </div>
+                <div class="mini-tile caution">
+                  <span>Ambiguity</span>
+                  <strong>37</strong>
+                </div>
+                <div class="mini-tile ghost">
+                  <span>Risk</span>
+                  <strong>11</strong>
+                </div>
+              </div>
+              <div class="insight-note">
+                <i data-lucide="lightbulb" style="width: 18px; height: 18px; color: var(--brand); flex: 0 0 auto;"></i>
+                <span>Strong postings usually name real hiring context, include concrete scope, and avoid generic bulk-hiring language.</span>
+              </div>
+            </div>
+          </div>
+          <div class="hero-ticker-row hero-ticker-desktop">
+            <div class="hero-ticker" aria-label="Live stream of recently scanned job sites">
+              <div class="ticker-track">
+                <div class="ticker-row">
+                  <div class="ticker-item"><span class="ticker-dot flagged"></span><span class="ticker-domain">leadsafrica.com</span><span class="ticker-badge flagged">FLAGGED</span></div>
+                  <div class="ticker-item"><span class="ticker-dot clean"></span><span class="ticker-domain">bebee.com</span><span class="ticker-badge clean">CLEAN</span></div>
+                  <div class="ticker-item"><span class="ticker-dot clean"></span><span class="ticker-domain">aerowaveconnected.com</span><span class="ticker-badge clean">CLEAN</span></div>
+                  <div class="ticker-item"><span class="ticker-dot clean"></span><span class="ticker-domain">ixvantage.com</span><span class="ticker-badge clean">CLEAN</span></div>
+                  <div class="ticker-item"><span class="ticker-dot clean"></span><span class="ticker-domain">copart.com</span><span class="ticker-badge clean">CLEAN</span></div>
+                  <div class="ticker-item"><span class="ticker-dot suspicious"></span><span class="ticker-domain">privlahealth.com</span><span class="ticker-badge suspicious">SUSPICIOUS</span></div>
+                  <div class="ticker-item"><span class="ticker-dot clean"></span><span class="ticker-domain">instagram.com</span><span class="ticker-badge clean">CLEAN</span></div>
+                </div>
+                <div class="ticker-row" aria-hidden="true">
+                  <div class="ticker-item"><span class="ticker-dot flagged"></span><span class="ticker-domain">leadsafrica.com</span><span class="ticker-badge flagged">FLAGGED</span></div>
+                  <div class="ticker-item"><span class="ticker-dot clean"></span><span class="ticker-domain">bebee.com</span><span class="ticker-badge clean">CLEAN</span></div>
+                  <div class="ticker-item"><span class="ticker-dot clean"></span><span class="ticker-domain">aerowaveconnected.com</span><span class="ticker-badge clean">CLEAN</span></div>
+                  <div class="ticker-item"><span class="ticker-dot clean"></span><span class="ticker-domain">ixvantage.com</span><span class="ticker-badge clean">CLEAN</span></div>
+                  <div class="ticker-item"><span class="ticker-dot clean"></span><span class="ticker-domain">copart.com</span><span class="ticker-badge clean">CLEAN</span></div>
+                  <div class="ticker-item"><span class="ticker-dot suspicious"></span><span class="ticker-domain">privlahealth.com</span><span class="ticker-badge suspicious">SUSPICIOUS</span></div>
+                  <div class="ticker-item"><span class="ticker-dot clean"></span><span class="ticker-domain">instagram.com</span><span class="ticker-badge clean">CLEAN</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="search-card hero-search-card" id="heroSearchCard">
+          <div class="search-box">
+            <i data-lucide="link-2" style="width: 18px; height: 18px; color: var(--text-muted); flex: 0 0 auto;"></i>
+            <input type="text" id="urlInput" placeholder="Paste a job posting URL" aria-label="Job posting URL">
+            <button id="investigateBtn" onclick="investigate()">
+              <i id="investigateBtnIcon" data-lucide="search" style="width: 16px; height: 16px;"></i>
+              <span id="investigateBtnLabel">Investigate</span>
+            </button>
+          </div>
+
+          <div class="hero-search-extra" id="heroSearchExtra">
+            <div class="panel-heading">
+              <div>
+                <strong>Investigate a listing</strong>
+                <p>Paste a URL or provide the raw job description when an ATS blocks JobLens Agent.</p>
+                <div class="panel-subnote">
+                  <i data-lucide="lock-keyhole" style="width: 14px; height: 14px;"></i>
+                  Private analysis. Flags and recommendation are included in every result.
+                </div>
+              </div>
+            </div>
+
+            <div class="search-stack">
+              <details class="paste-toggle" id="pasteDetails">
+                <summary>
+                  <i data-lucide="file-text" style="width: 18px; height: 18px; color: var(--brand);"></i>
+                  <span class="summary-label">Agent blocked? Paste the job description below</span>
+                  <i class="summary-arrow" data-lucide="chevron-down" style="width: 16px; height: 16px;"></i>
+                </summary>
+                <textarea id="pastedText" placeholder="Paste the full job description here. Oracle HCM, Workday, Taleo, Greenhouse, and other portals are all supported when copied manually."></textarea>
+              </details>
+
+              <div class="status" id="status"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="mobile-ticker-section" aria-label="Live stream of recently scanned job sites">
+        <div class="hero-ticker hero-ticker-desktop-off">
+          <div class="ticker-track">
+            <div class="ticker-row">
+              <div class="ticker-item"><span class="ticker-dot flagged"></span><span class="ticker-domain">leadsafrica.com</span><span class="ticker-badge flagged">FLAGGED</span></div>
+              <div class="ticker-item"><span class="ticker-dot clean"></span><span class="ticker-domain">bebee.com</span><span class="ticker-badge clean">CLEAN</span></div>
+              <div class="ticker-item"><span class="ticker-dot clean"></span><span class="ticker-domain">aerowaveconnected.com</span><span class="ticker-badge clean">CLEAN</span></div>
+              <div class="ticker-item"><span class="ticker-dot clean"></span><span class="ticker-domain">ixvantage.com</span><span class="ticker-badge clean">CLEAN</span></div>
+              <div class="ticker-item"><span class="ticker-dot clean"></span><span class="ticker-domain">copart.com</span><span class="ticker-badge clean">CLEAN</span></div>
+              <div class="ticker-item"><span class="ticker-dot suspicious"></span><span class="ticker-domain">privlahealth.com</span><span class="ticker-badge suspicious">SUSPICIOUS</span></div>
+              <div class="ticker-item"><span class="ticker-dot clean"></span><span class="ticker-domain">instagram.com</span><span class="ticker-badge clean">CLEAN</span></div>
+            </div>
+            <div class="ticker-row" aria-hidden="true">
+              <div class="ticker-item"><span class="ticker-dot flagged"></span><span class="ticker-domain">leadsafrica.com</span><span class="ticker-badge flagged">FLAGGED</span></div>
+              <div class="ticker-item"><span class="ticker-dot clean"></span><span class="ticker-domain">bebee.com</span><span class="ticker-badge clean">CLEAN</span></div>
+              <div class="ticker-item"><span class="ticker-dot clean"></span><span class="ticker-domain">aerowaveconnected.com</span><span class="ticker-badge clean">CLEAN</span></div>
+              <div class="ticker-item"><span class="ticker-dot clean"></span><span class="ticker-domain">ixvantage.com</span><span class="ticker-badge clean">CLEAN</span></div>
+              <div class="ticker-item"><span class="ticker-dot clean"></span><span class="ticker-domain">copart.com</span><span class="ticker-badge clean">CLEAN</span></div>
+              <div class="ticker-item"><span class="ticker-dot suspicious"></span><span class="ticker-domain">privlahealth.com</span><span class="ticker-badge suspicious">SUSPICIOUS</span></div>
+              <div class="ticker-item"><span class="ticker-dot clean"></span><span class="ticker-domain">instagram.com</span><span class="ticker-badge clean">CLEAN</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="result-card" id="resultCard">
+        <div class="verdict-banner" id="verdictBanner">
+          <div class="verdict-icon" id="verdictEmoji"></div>
+          <div class="verdict-text" id="verdictTextBox">
+            <h2 id="verdictLabel"></h2>
+            <p id="verdictReason"></p>
+          </div>
+          <div class="score-ring" id="scoreRing"></div>
+        </div>
+
+        <div class="result-body">
+          <div class="meta-row">
+            <div class="meta-item"><strong id="metaRole">-</strong>Role</div>
+            <div class="meta-item"><strong id="metaCompany">-</strong>Company</div>
+            <div class="meta-item"><strong id="metaLocation">-</strong>Location</div>
+            <div class="meta-item"><strong id="metaPosted">-</strong>Posted</div>
+          </div>
+
+          <div class="flags-row">
+            <div class="flags-box green">
+              <h4>
+                <i data-lucide="badge-check" style="width: 16px; height: 16px;"></i>
+                Green Flags
+              </h4>
+              <ul id="greenFlags"></ul>
+            </div>
+
+            <div class="flags-box red">
+              <h4>
+                <i data-lucide="shield-alert" style="width: 16px; height: 16px;"></i>
+                Red Flags
+              </h4>
+              <ul id="redFlags"></ul>
+            </div>
+          </div>
+
+          <div class="recommendation">
+            <strong>
+              <i data-lucide="message-square-heart" style="width: 16px; height: 16px;"></i>
+              Agent Recommendation
+            </strong>
+            <span id="recommendation"></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="bottom-panel">
+        <div class="section-header">
+          <strong>
+            <i data-lucide="archive" style="width: 18px; height: 18px; color: var(--brand);"></i>
+            Investigation History
+          </strong>
+          <span>Powered by MongoDB</span>
+        </div>
+
+        <div class="stats-row" id="statsRow"></div>
+        <div class="history-list" id="historyList"></div>
+        <div class="history-controls" id="historyControls"></div>
+      </section>
+    </main>
   </div>
-</div>
 
-<div class="bottom-section">
-  <div class="stats-row" id="statsRow"></div>
-  <div class="section-header">
-    📦 Investigation History
-    <span style="color:#333;font-size:11px;">powered by MongoDB</span>
-  </div>
-  <div class="history-list" id="historyList"></div>
-</div>
+  <script>
+    const ICONS = {
+      APPLY: { name: 'badge-check', color: 'var(--green)' },
+      CAUTION: { name: 'triangle-alert', color: 'var(--amber)' },
+      GHOST: { name: 'ghost', color: 'var(--red)' },
+      UNSCRAPABLE: { name: 'lock', color: 'var(--indigo)' }
+    };
 
-<script>
-  const EMOJIS = {
-    APPLY: '✅',
-    CAUTION: '⚠️',
-    GHOST: '👻',
-    UNSCRAPABLE: '🔒'
-  };
+    const LABELS = {
+      APPLY: 'Worth Applying',
+      CAUTION: 'Proceed with Caution',
+      GHOST: 'Likely Ghost Posting',
+      UNSCRAPABLE: 'Site Blocked - Paste Job Text to Investigate'
+    };
 
-  const LABELS = {
-    APPLY: 'Worth Applying',
-    CAUTION: 'Proceed with Caution',
-    GHOST: 'Likely Ghost Posting',
-    UNSCRAPABLE: 'Site Blocked — Paste Job Text to Investigate'
-  };
-
-  async function investigate() {
-    const url = document.getElementById('urlInput').value.trim();
-    const pastedText = document.getElementById('pastedText').value.trim();
-
-    if (!url && !pastedText) {
-      document.getElementById('status').textContent = '⚠️ Please enter a URL or paste a job description';
-      return;
-    }
-
-    const btn = document.getElementById('investigateBtn');
-    const status = document.getElementById('status');
-    btn.disabled = true;
-    document.getElementById('resultCard').style.display = 'none';
-
-    const steps = [
-      '🔍 Fetching job posting...',
-      '🧠 Gemini is analyzing the role...',
-      '🚩 Checking for red flags...',
-      '💾 Saving to MongoDB...',
-      '✅ Investigation complete'
+    const STATUS_STEPS = [
+      { icon: 'search', text: 'Fetching...', tone: 'active' },
+      { icon: 'scan-search', text: 'Analyzing...', tone: 'active' },
+      { icon: 'shield-alert', text: 'Checking...', tone: 'active' },
+      { icon: 'database', text: 'Saving...', tone: 'active' },
+      { icon: 'circle-check-big', text: 'Done', tone: 'active' }
     ];
 
-    let i = 0;
-    const interval = setInterval(() => {
-      if (i < steps.length - 1) status.textContent = steps[i++];
-    }, 1000);
+    const THEME_KEY = 'joblens-theme';
+    const HISTORY_PREVIEW_COUNT = 5;
+    const SYSTEM_THEME_QUERY = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+    let heroAlignTimeoutA = null;
+    let heroAlignTimeoutB = null;
+    let historyExpanded = false;
+    let historyCache = [];
 
-    try {
-      const res = await fetch('http://localhost:3000/api/investigate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: url || null, pastedText: pastedText || null })
-      });
-
-      const data = await res.json();
-      clearInterval(interval);
-      status.textContent = steps[steps.length - 1];
-
-      // If unscrapable, auto-open the paste area
-      if (data.verdict === 'UNSCRAPABLE') {
-        document.getElementById('pasteDetails').open = true;
+    function updateThemeToggleUi() {
+      const isDark = document.body.classList.contains('dark-mode');
+      const toggle = document.getElementById('themeToggle');
+      const icon = document.getElementById('themeToggleIcon');
+      if (!toggle || !icon) {
+        return;
       }
-
-      showResult(data);
-      loadHistory();
-
-    } catch (err) {
-      clearInterval(interval);
-      status.textContent = '❌ Error: ' + err.message;
+      toggle.classList.toggle('active', isDark);
+      toggle.setAttribute('aria-label', isDark ? 'Enable light mode' : 'Enable dark mode');
+      toggle.setAttribute('title', isDark ? 'Enable light mode' : 'Enable dark mode');
+      icon.setAttribute('data-lucide', isDark ? 'sun' : 'moon');
+      refreshIcons();
     }
 
-    // Clear paste area after investigation completes
-    document.getElementById('pastedText').value = '';
-    document.getElementById('pasteDetails').open = false;
-    btn.disabled = false;
-  }
+    function applyTheme(mode) {
+      const dark = mode === 'dark';
+      document.body.classList.toggle('dark-mode', dark);
+      updateThemeToggleUi();
+    }
 
-  function showResult(data) {
-    const verdict = data.verdict || 'CAUTION';
+    function initializeTheme() {
+      const saved = localStorage.getItem(THEME_KEY);
+      if (saved === 'dark' || saved === 'light') {
+        applyTheme(saved);
+        return;
+      }
+      const prefersDark = SYSTEM_THEME_QUERY ? SYSTEM_THEME_QUERY.matches : false;
+      applyTheme(prefersDark ? 'dark' : 'light');
+    }
 
-    document.getElementById('verdictBanner').className = `verdict-banner ${verdict}`;
-    document.getElementById('verdictEmoji').textContent = EMOJIS[verdict] || '❓';
-    document.getElementById('verdictTextBox').className = `verdict-text ${verdict}`;
-    document.getElementById('verdictLabel').textContent = LABELS[verdict] || verdict;
-    document.getElementById('verdictReason').textContent = data.verdictReason || '';
-    document.getElementById('scoreRing').textContent = data.score > 0 ? data.score : '?';
-    document.getElementById('scoreRing').className = `score-ring ${verdict}`;
+    function handleSystemThemeChange(event) {
+      const saved = localStorage.getItem(THEME_KEY);
+      if (saved === 'dark' || saved === 'light') {
+        return;
+      }
+      applyTheme(event.matches ? 'dark' : 'light');
+    }
 
-    document.getElementById('metaRole').textContent = data.role || '—';
-    document.getElementById('metaCompany').textContent = data.company || '—';
-    document.getElementById('metaLocation').textContent = data.location || '—';
-    document.getElementById('metaPosted').textContent = data.postedDate || '—';
+    function toggleTheme() {
+      const next = document.body.classList.contains('dark-mode') ? 'light' : 'dark';
+      localStorage.setItem(THEME_KEY, next);
+      applyTheme(next);
+    }
 
-    document.getElementById('greenFlags').innerHTML =
-      (data.greenFlags || []).map(f => `<li>${f}</li>`).join('');
-    document.getElementById('redFlags').innerHTML =
-      (data.redFlags || []).map(f => `<li>${f}</li>`).join('');
+    function refreshIcons() {
+      if (window.lucide && typeof window.lucide.createIcons === 'function') {
+        window.lucide.createIcons();
+      }
+    }
 
-    document.getElementById('recommendation').textContent = data.recommendation || '';
+    function renderIcon(iconName, color, size) {
+      return '<i data-lucide="' + iconName + '" style="width:' + size + 'px;height:' + size + 'px;color:' + color + ';"></i>';
+    }
 
-    const card = document.getElementById('resultCard');
-    card.style.display = 'block';
-    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }
+    function setStatus(text, iconName, tone) {
+      const status = document.getElementById('status');
+      if (!text) {
+        status.textContent = '';
+        status.className = 'status';
+        return;
+      }
+      status.textContent = text;
+      status.className = 'status' + (tone === 'error' ? ' error' : '');
+    }
 
-  async function loadHistory() {
-    try {
-      const [histRes, statsRes] = await Promise.all([
-        fetch('http://localhost:3000/api/history'),
-        fetch('http://localhost:3000/api/stats')
-      ]);
+    function setInvestigateButton(text, iconName, disabled) {
+      const btn = document.getElementById('investigateBtn');
+      const icon = document.getElementById('investigateBtnIcon');
+      const label = document.getElementById('investigateBtnLabel');
+      if (!btn || !icon || !label) {
+        return;
+      }
+      btn.disabled = !!disabled;
+      icon.setAttribute('data-lucide', iconName || 'search');
+      label.textContent = text;
+      refreshIcons();
+    }
 
-      const history = await histRes.json();
-      const stats = await statsRes.json();
-
-      document.getElementById('statsRow').innerHTML = `
-        <div class="stat-box total"><div class="num">${stats.total}</div><div class="lbl">Investigated</div></div>
-        <div class="stat-box apply"><div class="num">${stats.apply}</div><div class="lbl">Worth Applying</div></div>
-        <div class="stat-box caution"><div class="num">${stats.caution}</div><div class="lbl">Caution</div></div>
-        <div class="stat-box ghost"><div class="num">${stats.ghost}</div><div class="lbl">Ghost Jobs</div></div>
-      `;
-
-      if (!history.length) {
-        document.getElementById('historyList').innerHTML =
-          '<div class="empty-history">No investigations yet. Paste a job URL above to get started.</div>';
+    function alignHeroToTop() {
+      const hero = document.getElementById('heroPanel');
+      const investigationCard = document.getElementById('heroSearchCard');
+      const anchor = investigationCard || hero;
+      if (!anchor) {
         return;
       }
 
-      document.getElementById('historyList').innerHTML = history.map(item => `
-        <div class="history-item">
-          <span class="h-verdict ${item.verdict}">${item.verdict}</span>
-          <span class="h-role">${item.role || 'Unknown Role'}</span>
-          <span class="h-company">${item.company || ''}</span>
-          <span class="h-date">${new Date(item.investigatedAt).toLocaleDateString()}</span>
-          ${item.cached ? '<span class="cached-badge">cached</span>' : ''}
-        </div>
-      `).join('');
-
-    } catch (err) {
-      console.error('History load failed:', err);
+      const header = document.querySelector('header');
+      const headerOffset = (header ? header.getBoundingClientRect().height : 0) + 8;
+      const targetY = window.scrollY + anchor.getBoundingClientRect().top - headerOffset;
+      window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
     }
-  }
 
-  document.getElementById('urlInput').addEventListener('keypress', e => {
-    if (e.key === 'Enter') investigate();
-  });
+    function clearHeroAlignTimers() {
+      if (heroAlignTimeoutA) {
+        clearTimeout(heroAlignTimeoutA);
+        heroAlignTimeoutA = null;
+      }
+      if (heroAlignTimeoutB) {
+        clearTimeout(heroAlignTimeoutB);
+        heroAlignTimeoutB = null;
+      }
+    }
 
-  loadHistory();
-</script>
+    function openHeroInteractive(options) {
+      const hero = document.getElementById('heroPanel');
+      if (!hero) {
+        return;
+      }
 
+      hero.classList.add('interactive-open');
+
+      if (options && options.alignToTop) {
+        clearHeroAlignTimers();
+        requestAnimationFrame(function() {
+          heroAlignTimeoutA = setTimeout(function() {
+            alignHeroToTop();
+            heroAlignTimeoutA = null;
+          }, 0);
+          heroAlignTimeoutB = setTimeout(function() {
+            alignHeroToTop();
+            heroAlignTimeoutB = null;
+          }, 220);
+        });
+      }
+    }
+
+    function statCardHtml(type, label, value, iconName) {
+      return (
+        '<div class="stat-box ' + type + '">' +
+          '<div class="stat-top">' +
+            '<div class="lbl">' + label + '</div>' +
+            renderIcon(iconName, 'currentColor', 18) +
+          '</div>' +
+          '<div class="num">' + value + '</div>' +
+        '</div>'
+      );
+    }
+
+    async function investigate() {
+      openHeroInteractive();
+
+      const url = document.getElementById('urlInput').value.trim();
+      const pastedText = document.getElementById('pastedText').value.trim();
+
+      if (!url && !pastedText) {
+        setStatus('Please enter a URL or paste a job description.', 'circle-alert', 'error');
+        return;
+      }
+
+      setInvestigateButton(STATUS_STEPS[0].text, STATUS_STEPS[0].icon, true);
+      setStatus('');
+      document.getElementById('resultCard').style.display = 'none';
+
+      let stepIndex = 0;
+
+      const interval = setInterval(function() {
+        stepIndex += 1;
+        if (stepIndex < STATUS_STEPS.length - 1) {
+          const step = STATUS_STEPS[stepIndex];
+          setInvestigateButton(step.text, step.icon, true);
+        }
+      }, 1000);
+
+      try {
+        const res = await fetch('http://localhost:3000/api/investigate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: url || null, pastedText: pastedText || null })
+        });
+
+        const data = await res.json();
+        clearInterval(interval);
+        const finalStep = STATUS_STEPS[STATUS_STEPS.length - 1];
+        setInvestigateButton(finalStep.text, finalStep.icon, true);
+
+        if (data.verdict === 'UNSCRAPABLE') {
+          document.getElementById('pasteDetails').open = true;
+        }
+
+        showResult(data);
+        loadHistory();
+      } catch (err) {
+        clearInterval(interval);
+        setStatus('Error: ' + err.message, 'circle-x', 'error');
+      } finally {
+        setTimeout(function() {
+          setInvestigateButton('Investigate', 'search', false);
+        }, 450);
+      }
+
+      document.getElementById('pastedText').value = '';
+      document.getElementById('pasteDetails').open = false;
+    }
+
+    function showResult(data) {
+      clearHeroAlignTimers();
+
+      const verdict = data.verdict || 'CAUTION';
+      const icon = ICONS[verdict] || { name: 'circle-help', color: 'var(--text-muted)' };
+
+      document.getElementById('verdictBanner').className = 'verdict-banner ' + verdict;
+      document.getElementById('verdictEmoji').innerHTML = renderIcon(icon.name, icon.color, 28);
+      document.getElementById('verdictTextBox').className = 'verdict-text ' + verdict;
+      document.getElementById('verdictLabel').textContent = LABELS[verdict] || verdict;
+      document.getElementById('verdictReason').textContent = data.verdictReason || 'No detailed reasoning returned.';
+      document.getElementById('scoreRing').textContent = data.score > 0 ? data.score : '?';
+      document.getElementById('scoreRing').className = 'score-ring ' + verdict;
+
+      document.getElementById('metaRole').textContent = data.role || '-';
+      document.getElementById('metaCompany').textContent = data.company || '-';
+      document.getElementById('metaLocation').textContent = data.location || '-';
+      document.getElementById('metaPosted').textContent = data.postedDate || '-';
+
+      document.getElementById('greenFlags').innerHTML = (data.greenFlags || []).map(function(flag) {
+        return '<li>' + flag + '</li>';
+      }).join('');
+
+      document.getElementById('redFlags').innerHTML = (data.redFlags || []).map(function(flag) {
+        return '<li>' + flag + '</li>';
+      }).join('');
+
+      document.getElementById('recommendation').textContent = data.recommendation || 'No recommendation available.';
+
+      const card = document.getElementById('resultCard');
+      card.style.display = 'block';
+      refreshIcons();
+      card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    async function loadHistory() {
+      try {
+        const [histRes, statsRes] = await Promise.all([
+          fetch('http://localhost:3000/api/history').catch(function() {
+            return { json: function() { return []; } };
+          }),
+          fetch('http://localhost:3000/api/stats').catch(function() {
+            return { json: function() { return { total: 0, apply: 0, caution: 0, ghost: 0 }; } };
+          })
+        ]);
+
+        const history = await histRes.json();
+        const stats = await statsRes.json();
+        historyCache = Array.isArray(history) ? history : [];
+
+        document.getElementById('statsRow').innerHTML = [
+          statCardHtml('total', 'Investigated', stats.total || 0, 'layers-3'),
+          statCardHtml('apply', 'Worth Applying', stats.apply || 0, 'badge-check'),
+          statCardHtml('caution', 'Caution', stats.caution || 0, 'triangle-alert'),
+          statCardHtml('ghost', 'Ghost Jobs', stats.ghost || 0, 'ghost')
+        ].join('');
+
+        if (!historyCache.length) {
+          document.getElementById('historyList').innerHTML =
+            '<div class="empty-history">' +
+              renderIcon('inbox', 'var(--text-muted)', 28) +
+              '<strong>No investigations yet</strong>' +
+              '<span>Run a URL or pasted job description through JobLens to start building history.</span>' +
+            '</div>';
+          document.getElementById('historyControls').innerHTML = '';
+          historyExpanded = false;
+          refreshIcons();
+          return;
+        }
+
+        const visibleHistory = historyExpanded ? historyCache : historyCache.slice(0, HISTORY_PREVIEW_COUNT);
+        document.getElementById('historyList').innerHTML = visibleHistory.map(function(item) {
+          return (
+            '<div class="history-item">' +
+              '<span class="h-verdict ' + item.verdict + '">' + item.verdict + '</span>' +
+              '<span class="h-role">' + (item.role || 'Unknown Role') + '</span>' +
+              '<span class="h-company">' + (item.company || 'Unknown company') + '</span>' +
+              '<span class="h-date">' + new Date(item.investigatedAt).toLocaleDateString() + '</span>' +
+              (item.cached ? '<span class="cached-badge">Cached</span>' : '') +
+            '</div>'
+          );
+        }).join('');
+
+        if (historyCache.length > HISTORY_PREVIEW_COUNT) {
+          const hiddenCount = historyCache.length - HISTORY_PREVIEW_COUNT;
+          const iconName = historyExpanded ? 'chevron-up' : 'chevron-down';
+          const label = historyExpanded
+            ? 'Show Less'
+            : 'Show Full History (' + hiddenCount + ' more)';
+
+          document.getElementById('historyControls').innerHTML =
+            '<button class="history-toggle-btn" id="historyToggleBtn" type="button">' +
+              renderIcon(iconName, 'currentColor', 14) +
+              '<span>' + label + '</span>' +
+            '</button>';
+
+          document.getElementById('historyToggleBtn').addEventListener('click', function() {
+            historyExpanded = !historyExpanded;
+            loadHistory();
+          });
+        } else {
+          document.getElementById('historyControls').innerHTML = '';
+        }
+
+        refreshIcons();
+      } catch (err) {
+        console.error('History load failed:', err);
+      }
+    }
+
+    document.getElementById('urlInput').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        investigate();
+      }
+    });
+
+    document.getElementById('urlInput').addEventListener('focus', function() {
+      openHeroInteractive({ alignToTop: true });
+    });
+    document.getElementById('urlInput').addEventListener('input', function() {
+      openHeroInteractive({ alignToTop: true });
+    });
+    document.getElementById('pastedText').addEventListener('focus', function() {
+      openHeroInteractive({ alignToTop: true });
+    });
+    document.getElementById('pastedText').addEventListener('input', function() {
+      openHeroInteractive({ alignToTop: true });
+    });
+    document.getElementById('pasteDetails').addEventListener('toggle', function() {
+      if (document.getElementById('pasteDetails').open) {
+        openHeroInteractive({ alignToTop: true });
+      }
+    });
+
+    initializeTheme();
+    setInvestigateButton('Investigate', 'search', false);
+    if (SYSTEM_THEME_QUERY) {
+      if (typeof SYSTEM_THEME_QUERY.addEventListener === 'function') {
+        SYSTEM_THEME_QUERY.addEventListener('change', handleSystemThemeChange);
+      } else if (typeof SYSTEM_THEME_QUERY.addListener === 'function') {
+        SYSTEM_THEME_QUERY.addListener(handleSystemThemeChange);
+      }
+    }
+    refreshIcons();
+    loadHistory();
+  </script>
 </body>
 </html>
