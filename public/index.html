@@ -6,7 +6,7 @@
   <title>JobLens — Is This Job Real?</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    
+
     body {
       font-family: 'Segoe UI', sans-serif;
       background: #0a0a0f;
@@ -15,68 +15,71 @@
     }
 
     header {
-      padding: 24px 40px;
+      padding: 20px 40px;
       border-bottom: 1px solid #1e1e2e;
       display: flex;
       align-items: center;
       gap: 12px;
     }
 
-    .logo { font-size: 24px; font-weight: 700; color: #fff; }
+    .logo { font-size: 22px; font-weight: 700; color: #fff; }
     .logo span { color: #6c63ff; }
-    .tagline { font-size: 13px; color: #666; margin-left: auto; }
+    .tagline { font-size: 13px; color: #555; margin-left: auto; }
 
     .hero {
       text-align: center;
-      padding: 60px 20px 40px;
+      padding: 50px 20px 30px;
     }
 
     .hero h1 {
-      font-size: 42px;
+      font-size: 40px;
       font-weight: 800;
       color: #fff;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
 
     .hero h1 span { color: #6c63ff; }
 
     .hero p {
-      font-size: 18px;
-      color: #888;
-      max-width: 500px;
-      margin: 0 auto 40px;
+      font-size: 16px;
+      color: #666;
+      max-width: 480px;
+      margin: 0 auto 32px;
       line-height: 1.6;
     }
 
-    .search-box {
+    .input-area {
       max-width: 680px;
       margin: 0 auto;
+    }
+
+    .search-box {
       display: flex;
-      gap: 12px;
+      gap: 10px;
     }
 
     .search-box input {
       flex: 1;
-      padding: 16px 20px;
+      padding: 15px 18px;
       background: #13131f;
       border: 1px solid #2a2a3e;
       border-radius: 12px;
       color: #fff;
-      font-size: 15px;
+      font-size: 14px;
       outline: none;
       transition: border-color 0.2s;
     }
 
     .search-box input:focus { border-color: #6c63ff; }
-    .search-box input::placeholder { color: #444; }
+    .search-box input::placeholder { color: #3a3a5a; }
 
     .search-box button {
-      padding: 16px 28px;
+      padding: 15px 24px;
       background: #6c63ff;
       color: #fff;
       border: none;
       border-radius: 12px;
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 600;
       cursor: pointer;
       transition: background 0.2s;
@@ -84,20 +87,68 @@
     }
 
     .search-box button:hover { background: #5a52e0; }
-    .search-box button:disabled { background: #333; cursor: not-allowed; }
+    .search-box button:disabled { background: #2a2a3e; color: #555; cursor: not-allowed; }
+
+    .paste-toggle {
+      margin-top: 10px;
+      text-align: left;
+    }
+
+    .paste-toggle summary {
+      color: #555;
+      font-size: 12px;
+      cursor: pointer;
+      padding: 6px 0;
+      user-select: none;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .paste-toggle summary:hover { color: #6c63ff; }
+
+    .paste-toggle summary::before {
+      content: '▶';
+      font-size: 9px;
+      transition: transform 0.2s;
+    }
+
+    .paste-toggle[open] summary::before { transform: rotate(90deg); }
+
+    .paste-toggle textarea {
+      width: 100%;
+      margin-top: 8px;
+      padding: 14px;
+      background: #13131f;
+      border: 1px solid #2a2a3e;
+      border-radius: 12px;
+      color: #bbb;
+      font-size: 13px;
+      height: 130px;
+      resize: vertical;
+      outline: none;
+      font-family: inherit;
+      line-height: 1.5;
+      transition: border-color 0.2s;
+    }
+
+    .paste-toggle textarea:focus { border-color: #6c63ff; }
+    .paste-toggle textarea::placeholder { color: #333; }
 
     .status {
       text-align: center;
-      margin: 24px auto;
+      margin: 20px auto 0;
       max-width: 680px;
-      font-size: 14px;
+      font-size: 13px;
       color: #6c63ff;
-      min-height: 20px;
+      min-height: 18px;
     }
 
+    /* Result card */
     .result-card {
       max-width: 680px;
-      margin: 0 auto 40px;
+      margin: 16px auto 40px;
       background: #13131f;
       border: 1px solid #2a2a3e;
       border-radius: 16px;
@@ -106,102 +157,131 @@
     }
 
     .verdict-banner {
-      padding: 24px 28px;
+      padding: 22px 26px;
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 14px;
     }
 
-    .verdict-banner.APPLY { background: #0d2e1a; border-bottom: 1px solid #1a5c33; }
-    .verdict-banner.CAUTION { background: #2e2000; border-bottom: 1px solid #5c4000; }
-    .verdict-banner.GHOST { background: #2e0d0d; border-bottom: 1px solid #5c1a1a; }
+    .verdict-banner.APPLY    { background: #0a2118; border-bottom: 1px solid #144d2e; }
+    .verdict-banner.CAUTION  { background: #1e1600; border-bottom: 1px solid #4a3500; }
+    .verdict-banner.GHOST    { background: #1e0a0a; border-bottom: 1px solid #4a1515; }
+    .verdict-banner.UNSCRAPABLE { background: #111128; border-bottom: 1px solid #2a2a5a; }
 
-    .verdict-emoji { font-size: 36px; }
+    .verdict-emoji { font-size: 32px; }
 
-    .verdict-text h2 { font-size: 22px; font-weight: 700; }
-    .verdict-text.APPLY h2 { color: #4caf87; }
-    .verdict-text.CAUTION h2 { color: #ffb74d; }
-    .verdict-text.GHOST h2 { color: #ef5350; }
+    .verdict-text h2 { font-size: 20px; font-weight: 700; }
+    .verdict-text.APPLY h2       { color: #4caf87; }
+    .verdict-text.CAUTION h2     { color: #ffb74d; }
+    .verdict-text.GHOST h2       { color: #ef5350; }
+    .verdict-text.UNSCRAPABLE h2 { color: #7c7cff; }
 
-    .verdict-text p { font-size: 14px; color: #888; margin-top: 4px; }
+    .verdict-text p { font-size: 13px; color: #666; margin-top: 4px; line-height: 1.5; max-width: 460px; }
 
     .score-ring {
       margin-left: auto;
-      width: 64px;
-      height: 64px;
+      min-width: 56px;
+      height: 56px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 20px;
+      font-size: 18px;
       font-weight: 800;
       border: 3px solid;
     }
 
-    .score-ring.APPLY { border-color: #4caf87; color: #4caf87; }
-    .score-ring.CAUTION { border-color: #ffb74d; color: #ffb74d; }
-    .score-ring.GHOST { border-color: #ef5350; color: #ef5350; }
+    .score-ring.APPLY       { border-color: #4caf87; color: #4caf87; }
+    .score-ring.CAUTION     { border-color: #ffb74d; color: #ffb74d; }
+    .score-ring.GHOST       { border-color: #ef5350; color: #ef5350; }
+    .score-ring.UNSCRAPABLE { border-color: #7c7cff; color: #7c7cff; }
 
-    .result-body { padding: 24px 28px; }
+    .result-body { padding: 22px 26px; }
 
     .meta-row {
       display: flex;
-      gap: 24px;
-      margin-bottom: 20px;
+      gap: 20px;
+      margin-bottom: 18px;
       flex-wrap: wrap;
     }
 
-    .meta-item { font-size: 13px; color: #666; }
-    .meta-item strong { color: #ccc; display: block; font-size: 14px; }
+    .meta-item { font-size: 12px; color: #555; }
+    .meta-item strong { color: #ccc; display: block; font-size: 14px; margin-bottom: 2px; }
 
-    .flags-row { display: flex; gap: 16px; margin-bottom: 20px; }
+    .flags-row { display: flex; gap: 12px; margin-bottom: 16px; }
 
     .flags-box {
       flex: 1;
       background: #0a0a0f;
       border-radius: 10px;
-      padding: 14px;
+      padding: 12px 14px;
     }
 
-    .flags-box h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+    .flags-box h4 {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
     .flags-box.green h4 { color: #4caf87; }
-    .flags-box.red h4 { color: #ef5350; }
+    .flags-box.red h4   { color: #ef5350; }
 
     .flags-box ul { list-style: none; }
-    .flags-box ul li { font-size: 13px; color: #aaa; padding: 3px 0; }
+
+    .flags-box ul li {
+      font-size: 12px;
+      color: #888;
+      padding: 3px 0;
+      line-height: 1.4;
+    }
+
     .flags-box.green ul li::before { content: '✓ '; color: #4caf87; }
-    .flags-box.red ul li::before { content: '✗ '; color: #ef5350; }
+    .flags-box.red ul li::before   { content: '✗ '; color: #ef5350; }
+    .flags-box ul li:empty { display: none; }
 
     .recommendation {
       background: #0a0a0f;
       border-radius: 10px;
       padding: 14px;
-      font-size: 14px;
-      color: #aaa;
+      font-size: 13px;
+      color: #999;
       line-height: 1.6;
       border-left: 3px solid #6c63ff;
     }
 
-    .recommendation strong { color: #6c63ff; display: block; margin-bottom: 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+    .recommendation strong {
+      color: #6c63ff;
+      display: block;
+      margin-bottom: 5px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
 
-    .history-section {
+    .source-badge {
+      display: inline-block;
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+
+    .source-badge.scraped { background: #0a2118; color: #4caf87; }
+    .source-badge.pasted  { background: #1e1600; color: #ffb74d; }
+    .source-badge.none    { background: #1e0a28; color: #aa88ff; }
+
+    /* Stats + History */
+    .bottom-section {
       max-width: 680px;
       margin: 0 auto 60px;
     }
 
-    .history-section h3 {
-      font-size: 16px;
-      color: #666;
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
     .stats-row {
       display: flex;
-      gap: 12px;
-      margin-bottom: 20px;
+      gap: 10px;
+      margin-bottom: 24px;
     }
 
     .stat-box {
@@ -209,231 +289,286 @@
       background: #13131f;
       border: 1px solid #2a2a3e;
       border-radius: 10px;
-      padding: 14px;
+      padding: 14px 10px;
       text-align: center;
     }
 
-    .stat-box .num { font-size: 28px; font-weight: 800; }
-    .stat-box .label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
-    .stat-box.apply .num { color: #4caf87; }
+    .stat-box .num  { font-size: 26px; font-weight: 800; }
+    .stat-box .lbl  { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+    .stat-box.total   .num { color: #6c63ff; }
+    .stat-box.apply   .num { color: #4caf87; }
     .stat-box.caution .num { color: #ffb74d; }
-    .stat-box.ghost .num { color: #ef5350; }
-    .stat-box.total .num { color: #6c63ff; }
+    .stat-box.ghost   .num { color: #ef5350; }
+
+    .section-header {
+      font-size: 13px;
+      color: #444;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
 
     .history-list { display: flex; flex-direction: column; gap: 8px; }
 
     .history-item {
       background: #13131f;
-      border: 1px solid #2a2a3e;
+      border: 1px solid #1e1e2e;
       border-radius: 10px;
-      padding: 14px 18px;
+      padding: 12px 16px;
       display: flex;
       align-items: center;
-      gap: 12px;
-      cursor: pointer;
+      gap: 10px;
       transition: border-color 0.2s;
     }
 
     .history-item:hover { border-color: #6c63ff; }
 
-    .history-verdict {
-      font-size: 11px;
+    .h-verdict {
+      font-size: 10px;
       font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 6px;
+      padding: 3px 7px;
+      border-radius: 5px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      white-space: nowrap;
     }
 
-    .history-verdict.APPLY { background: #0d2e1a; color: #4caf87; }
-    .history-verdict.CAUTION { background: #2e2000; color: #ffb74d; }
-    .history-verdict.GHOST { background: #2e0d0d; color: #ef5350; }
+    .h-verdict.APPLY       { background: #0a2118; color: #4caf87; }
+    .h-verdict.CAUTION     { background: #1e1600; color: #ffb74d; }
+    .h-verdict.GHOST       { background: #1e0a0a; color: #ef5350; }
+    .h-verdict.UNSCRAPABLE { background: #111128; color: #7c7cff; }
 
-    .history-role { font-size: 14px; color: #ccc; flex: 1; }
-    .history-company { font-size: 13px; color: #666; }
-    .history-date { font-size: 12px; color: #444; }
+    .h-role    { font-size: 13px; color: #ccc; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .h-company { font-size: 12px; color: #555; white-space: nowrap; }
+    .h-date    { font-size: 11px; color: #333; white-space: nowrap; }
 
     .cached-badge {
-      font-size: 11px;
-      background: #1e1e2e;
+      font-size: 10px;
+      background: #1a1a2e;
       color: #6c63ff;
-      padding: 2px 8px;
-      border-radius: 6px;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .empty-history {
+      text-align: center;
+      color: #333;
+      font-size: 13px;
+      padding: 30px;
     }
   </style>
 </head>
 <body>
 
-  <header>
-    <div class="logo">Job<span>Lens</span></div>
-    <div class="tagline">Don't apply blind. Investigate first.</div>
-  </header>
+<header>
+  <div class="logo">Job<span>Lens</span></div>
+  <div class="tagline">Don't apply blind. Investigate first.</div>
+</header>
 
-  <div class="hero">
-    <h1>Is this job <span>real?</span></h1>
-    <p>Paste any job posting URL. Our agent investigates before you waste time applying.</p>
+<div class="hero">
+  <h1>Is this job <span>real?</span></h1>
+  <p>Paste any job posting URL. Our agent investigates before you waste time applying to ghost jobs.</p>
 
+  <div class="input-area">
     <div class="search-box">
       <input type="text" id="urlInput" placeholder="Paste job posting URL here..." />
       <button id="investigateBtn" onclick="investigate()">Investigate</button>
     </div>
+
+    <details class="paste-toggle" id="pasteDetails">
+      <summary>💬 Site blocking scraper? Paste the job description here instead</summary>
+      <textarea id="pastedText"
+        placeholder="Paste the full job description text here. Works with any site — Oracle HCM, Workday, Greenhouse, Taleo, or any ATS portal that blocks bots..."></textarea>
+    </details>
   </div>
+</div>
 
-  <div class="status" id="status"></div>
+<div class="status" id="status"></div>
 
-  <div class="result-card" id="resultCard">
-    <div class="verdict-banner" id="verdictBanner">
-      <div class="verdict-emoji" id="verdictEmoji"></div>
-      <div class="verdict-text" id="verdictText">
-        <h2 id="verdictLabel"></h2>
-        <p id="verdictReason"></p>
-      </div>
-      <div class="score-ring" id="scoreRing"></div>
+<div class="result-card" id="resultCard">
+  <div class="verdict-banner" id="verdictBanner">
+    <div class="verdict-emoji" id="verdictEmoji"></div>
+    <div class="verdict-text" id="verdictTextBox">
+      <h2 id="verdictLabel"></h2>
+      <p id="verdictReason"></p>
     </div>
-    <div class="result-body">
-      <div class="meta-row">
-        <div class="meta-item"><strong id="metaRole">—</strong>Role</div>
-        <div class="meta-item"><strong id="metaCompany">—</strong>Company</div>
-        <div class="meta-item"><strong id="metaLocation">—</strong>Location</div>
-        <div class="meta-item"><strong id="metaPosted">—</strong>Posted</div>
+    <div class="score-ring" id="scoreRing"></div>
+  </div>
+  <div class="result-body">
+    <div class="meta-row">
+      <div class="meta-item"><strong id="metaRole">—</strong>Role</div>
+      <div class="meta-item"><strong id="metaCompany">—</strong>Company</div>
+      <div class="meta-item"><strong id="metaLocation">—</strong>Location</div>
+      <div class="meta-item"><strong id="metaPosted">—</strong>Posted</div>
+    </div>
+    <div class="flags-row">
+      <div class="flags-box green">
+        <h4>Green Flags</h4>
+        <ul id="greenFlags"></ul>
       </div>
-      <div class="flags-row">
-        <div class="flags-box green">
-          <h4>Green Flags</h4>
-          <ul id="greenFlags"></ul>
-        </div>
-        <div class="flags-box red">
-          <h4>Red Flags</h4>
-          <ul id="redFlags"></ul>
-        </div>
-      </div>
-      <div class="recommendation">
-        <strong>Agent Recommendation</strong>
-        <span id="recommendation"></span>
+      <div class="flags-box red">
+        <h4>Red Flags</h4>
+        <ul id="redFlags"></ul>
       </div>
     </div>
+    <div class="recommendation">
+      <strong>Agent Recommendation</strong>
+      <span id="recommendation"></span>
+    </div>
   </div>
+</div>
 
-  <div class="history-section">
-    <div class="stats-row" id="statsRow"></div>
-    <h3>📦 Investigation History <span style="font-size:12px;color:#444">(powered by MongoDB)</span></h3>
-    <div class="history-list" id="historyList"></div>
+<div class="bottom-section">
+  <div class="stats-row" id="statsRow"></div>
+  <div class="section-header">
+    📦 Investigation History
+    <span style="color:#333;font-size:11px;">powered by MongoDB</span>
   </div>
+  <div class="history-list" id="historyList"></div>
+</div>
 
-  <script>
-    const EMOJIS = { APPLY: '✅', CAUTION: '⚠️', GHOST: '👻' };
-    const LABELS = { APPLY: 'Worth Applying', CAUTION: 'Proceed with Caution', GHOST: 'Likely Ghost Posting' };
+<script>
+  const EMOJIS = {
+    APPLY: '✅',
+    CAUTION: '⚠️',
+    GHOST: '👻',
+    UNSCRAPABLE: '🔒'
+  };
 
-    async function investigate() {
-      const url = document.getElementById('urlInput').value.trim();
-      if (!url) return;
+  const LABELS = {
+    APPLY: 'Worth Applying',
+    CAUTION: 'Proceed with Caution',
+    GHOST: 'Likely Ghost Posting',
+    UNSCRAPABLE: 'Site Blocked — Paste Job Text to Investigate'
+  };
 
-      const btn = document.getElementById('investigateBtn');
-      const status = document.getElementById('status');
+  async function investigate() {
+    const url = document.getElementById('urlInput').value.trim();
+    const pastedText = document.getElementById('pastedText').value.trim();
 
-      btn.disabled = true;
-      document.getElementById('resultCard').style.display = 'none';
+    if (!url && !pastedText) {
+      document.getElementById('status').textContent = '⚠️ Please enter a URL or paste a job description';
+      return;
+    }
 
-      const steps = [
-        '🔍 Fetching job posting...',
-        '🧠 Gemini is analyzing the role...',
-        '🚩 Checking for red flags...',
-        '💾 Saving to MongoDB...',
-        '✅ Investigation complete'
-      ];
+    const btn = document.getElementById('investigateBtn');
+    const status = document.getElementById('status');
+    btn.disabled = true;
+    document.getElementById('resultCard').style.display = 'none';
 
-      let i = 0;
-      const interval = setInterval(() => {
-        if (i < steps.length - 1) status.textContent = steps[i++];
-      }, 1200);
+    const steps = [
+      '🔍 Fetching job posting...',
+      '🧠 Gemini is analyzing the role...',
+      '🚩 Checking for red flags...',
+      '💾 Saving to MongoDB...',
+      '✅ Investigation complete'
+    ];
 
-      try {
-        const res = await fetch('http://localhost:3000/api/investigate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url })
-        });
+    let i = 0;
+    const interval = setInterval(() => {
+      if (i < steps.length - 1) status.textContent = steps[i++];
+    }, 1000);
 
-        const data = await res.json();
-        clearInterval(interval);
-        status.textContent = steps[steps.length - 1];
+    try {
+      const res = await fetch('http://localhost:3000/api/investigate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: url || null, pastedText: pastedText || null })
+      });
 
-        showResult(data);
-        loadHistory();
+      const data = await res.json();
+      clearInterval(interval);
+      status.textContent = steps[steps.length - 1];
 
-      } catch (err) {
-        clearInterval(interval);
-        status.textContent = '❌ Error: ' + err.message;
+      // If unscrapable, auto-open the paste area
+      if (data.verdict === 'UNSCRAPABLE') {
+        document.getElementById('pasteDetails').open = true;
       }
 
-      btn.disabled = false;
+      showResult(data);
+      loadHistory();
+
+    } catch (err) {
+      clearInterval(interval);
+      status.textContent = '❌ Error: ' + err.message;
     }
 
-    function showResult(data) {
-      const verdict = data.verdict || 'CAUTION';
-      const card = document.getElementById('resultCard');
+    btn.disabled = false;
+  }
 
-      document.getElementById('verdictBanner').className = `verdict-banner ${verdict}`;
-      document.getElementById('verdictEmoji').textContent = EMOJIS[verdict];
-      document.getElementById('verdictText').className = `verdict-text ${verdict}`;
-      document.getElementById('verdictLabel').textContent = LABELS[verdict];
-      document.getElementById('verdictReason').textContent = data.verdictReason || '';
-      document.getElementById('scoreRing').textContent = data.score || '?';
-      document.getElementById('scoreRing').className = `score-ring ${verdict}`;
+  function showResult(data) {
+    const verdict = data.verdict || 'CAUTION';
 
-      document.getElementById('metaRole').textContent = data.role || '—';
-      document.getElementById('metaCompany').textContent = data.company || '—';
-      document.getElementById('metaLocation').textContent = data.location || '—';
-      document.getElementById('metaPosted').textContent = data.postedDate || '—';
+    document.getElementById('verdictBanner').className = `verdict-banner ${verdict}`;
+    document.getElementById('verdictEmoji').textContent = EMOJIS[verdict] || '❓';
+    document.getElementById('verdictTextBox').className = `verdict-text ${verdict}`;
+    document.getElementById('verdictLabel').textContent = LABELS[verdict] || verdict;
+    document.getElementById('verdictReason').textContent = data.verdictReason || '';
+    document.getElementById('scoreRing').textContent = data.score > 0 ? data.score : '?';
+    document.getElementById('scoreRing').className = `score-ring ${verdict}`;
 
-      const gf = document.getElementById('greenFlags');
-      const rf = document.getElementById('redFlags');
-      gf.innerHTML = (data.greenFlags || []).map(f => `<li>${f}</li>`).join('');
-      rf.innerHTML = (data.redFlags || []).map(f => `<li>${f}</li>`).join('');
+    document.getElementById('metaRole').textContent = data.role || '—';
+    document.getElementById('metaCompany').textContent = data.company || '—';
+    document.getElementById('metaLocation').textContent = data.location || '—';
+    document.getElementById('metaPosted').textContent = data.postedDate || '—';
 
-      document.getElementById('recommendation').textContent = data.recommendation || '';
+    document.getElementById('greenFlags').innerHTML =
+      (data.greenFlags || []).map(f => `<li>${f}</li>`).join('');
+    document.getElementById('redFlags').innerHTML =
+      (data.redFlags || []).map(f => `<li>${f}</li>`).join('');
 
-      card.style.display = 'block';
-      card.scrollIntoView({ behavior: 'smooth' });
-    }
+    document.getElementById('recommendation').textContent = data.recommendation || '';
 
-    async function loadHistory() {
-      try {
-        const [histRes, statsRes] = await Promise.all([
-          fetch('http://localhost:3000/api/history'),
-          fetch('http://localhost:3000/api/stats')
-        ]);
-        const history = await histRes.json();
-        const stats = await statsRes.json();
+    const card = document.getElementById('resultCard');
+    card.style.display = 'block';
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
 
-        document.getElementById('statsRow').innerHTML = `
-          <div class="stat-box total"><div class="num">${stats.total}</div><div class="label">Investigated</div></div>
-          <div class="stat-box apply"><div class="num">${stats.apply}</div><div class="label">Worth Applying</div></div>
-          <div class="stat-box caution"><div class="num">${stats.caution}</div><div class="label">Caution</div></div>
-          <div class="stat-box ghost"><div class="num">${stats.ghost}</div><div class="label">Ghost Jobs</div></div>
-        `;
+  async function loadHistory() {
+    try {
+      const [histRes, statsRes] = await Promise.all([
+        fetch('http://localhost:3000/api/history'),
+        fetch('http://localhost:3000/api/stats')
+      ]);
 
-        document.getElementById('historyList').innerHTML = history.map(item => `
-          <div class="history-item">
-            <span class="history-verdict ${item.verdict}">${item.verdict}</span>
-            <span class="history-role">${item.role || 'Unknown Role'}</span>
-            <span class="history-company">${item.company || ''}</span>
-            <span class="history-date">${new Date(item.investigatedAt).toLocaleDateString()}</span>
-            ${item.cached ? '<span class="cached-badge">cached</span>' : ''}
-          </div>
-        `).join('');
+      const history = await histRes.json();
+      const stats = await statsRes.json();
 
-      } catch (err) {
-        console.error('History load failed:', err);
+      document.getElementById('statsRow').innerHTML = `
+        <div class="stat-box total"><div class="num">${stats.total}</div><div class="lbl">Investigated</div></div>
+        <div class="stat-box apply"><div class="num">${stats.apply}</div><div class="lbl">Worth Applying</div></div>
+        <div class="stat-box caution"><div class="num">${stats.caution}</div><div class="lbl">Caution</div></div>
+        <div class="stat-box ghost"><div class="num">${stats.ghost}</div><div class="lbl">Ghost Jobs</div></div>
+      `;
+
+      if (!history.length) {
+        document.getElementById('historyList').innerHTML =
+          '<div class="empty-history">No investigations yet. Paste a job URL above to get started.</div>';
+        return;
       }
+
+      document.getElementById('historyList').innerHTML = history.map(item => `
+        <div class="history-item">
+          <span class="h-verdict ${item.verdict}">${item.verdict}</span>
+          <span class="h-role">${item.role || 'Unknown Role'}</span>
+          <span class="h-company">${item.company || ''}</span>
+          <span class="h-date">${new Date(item.investigatedAt).toLocaleDateString()}</span>
+          ${item.cached ? '<span class="cached-badge">cached</span>' : ''}
+        </div>
+      `).join('');
+
+    } catch (err) {
+      console.error('History load failed:', err);
     }
+  }
 
-    document.getElementById('urlInput').addEventListener('keypress', e => {
-      if (e.key === 'Enter') investigate();
-    });
+  document.getElementById('urlInput').addEventListener('keypress', e => {
+    if (e.key === 'Enter') investigate();
+  });
 
-    loadHistory();
-  </script>
+  loadHistory();
+</script>
 
 </body>
 </html>
