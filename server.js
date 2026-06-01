@@ -117,15 +117,28 @@ app.post('/api/investigate', async (req, res) => {
     let pageContent = null;
     let contentSource = '';
 
-    if (pastedText && pastedText.trim().length > 100) {
-      // User pasted job description directly
-      pageContent = pastedText.trim();
-      contentSource = 'pasted';
-      console.log('📋 Using pasted job description');
+    const isManualEntry = effectiveUrl.startsWith('manual-entry-');
+
+    if (isManualEntry && pastedText && pastedText.trim().length > 100) {
+    // No URL provided — use pasted text only
+    pageContent = pastedText.trim();
+    contentSource = 'pasted';
+    console.log('📋 Using pasted job description (no URL provided)');
+    } else if (!isManualEntry && pastedText && pastedText.trim().length > 100) {
+    // Both URL and pasted text provided — try scraping first, fall back to pasted
+    console.log('🔍 URL provided — scraping first, ignoring pasted text...');
+    pageContent = await scrapeJobPosting(effectiveUrl);
+    contentSource = 'scraped';
+    if (!pageContent) {
+        // Scrape failed — now use pasted text as fallback
+        pageContent = pastedText.trim();
+        contentSource = 'pasted-fallback';
+        console.log('📋 Scrape failed — falling back to pasted text');
+    }
     } else {
-      // Try scraping the URL
-      pageContent = await scrapeJobPosting(effectiveUrl);
-      contentSource = 'scraped';
+    // URL only — scrape it
+    pageContent = await scrapeJobPosting(effectiveUrl);
+    contentSource = 'scraped';
     }
 
     // If no usable content — return helpful UNSCRAPABLE response

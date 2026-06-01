@@ -494,6 +494,9 @@
       status.textContent = '❌ Error: ' + err.message;
     }
 
+    // Clear paste area after investigation completes
+    document.getElementById('pastedText').value = '';
+    document.getElementById('pasteDetails').open = false;
     btn.disabled = false;
   }
 
