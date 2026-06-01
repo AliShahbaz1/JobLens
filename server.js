@@ -8,7 +8,7 @@ const cheerio = require('cheerio');
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use(express.static('public'));
 
 // --- DB + Gemini setup ---
@@ -21,47 +21,147 @@ mongoClient.connect().then(() => {
   console.log('✅ MongoDB connected');
 });
 
+// --- URL Normalization ---
+function normalizeUrl(url) {
+  if (!url) return url;
+
+  // Indeed: smart-apply or vjk= param
+  if (url.includes('indeed.com') && url.includes('vjk=')) {
+    const vjkMatch = url.match(/vjk=([a-zA-Z0-9]+)/);
+    if (vjkMatch) {
+      const normalized = `https://ca.indeed.com/viewjob?jk=${vjkMatch[1]}`;
+      console.log('🔄 Indeed URL normalized:', normalized);
+      return normalized;
+    }
+  }
+
+  // Indeed: viewjob with extra params - strip to just jk
+  if (url.includes('indeed.com/viewjob')) {
+    const jkMatch = url.match(/jk=([a-zA-Z0-9]+)/);
+    if (jkMatch) {
+      const normalized = `https://ca.indeed.com/viewjob?jk=${jkMatch[1]}`;
+      console.log('🔄 Indeed URL cleaned:', normalized);
+      return normalized;
+    }
+  }
+
+  // LinkedIn: any format with a job ID
+  if (url.includes('linkedin.com')) {
+    const collectionMatch = url.match(/currentJobId=(\d+)/);
+    const viewMatch = url.match(/\/jobs\/view\/(\d+)/);
+    const genericMatch = url.match(/(\d{8,})/);
+    const jobId = (collectionMatch || viewMatch || genericMatch || [])[1];
+    if (jobId) {
+      const normalized = `https://www.linkedin.com/jobs/view/${jobId}`;
+      console.log('🔄 LinkedIn URL normalized:', normalized);
+      return normalized;
+    }
+  }
+
+  return url;
+}
+
 // --- Scrape job posting ---
 async function scrapeJobPosting(url) {
   try {
     const { data } = await axios.get(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-      timeout: 10000
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+      },
+      timeout: 15000,
+      maxRedirects: 5
     });
+
     const $ = cheerio.load(data);
-    $('script, style, nav, footer, header').remove();
+    $('script, style, nav, footer, header, iframe, noscript').remove();
     const text = $('body').text().replace(/\s+/g, ' ').trim().slice(0, 4000);
+
+    if (text.length < 200) {
+      console.log('⚠️ Very little content scraped — site may be blocking');
+      return null;
+    }
+
+    console.log(`✅ Scraped ${text.length} characters`);
     return text;
+
   } catch (err) {
-    return `Could not scrape page: ${err.message}`;
+    console.log('❌ Scrape failed:', err.message);
+    return null;
   }
 }
 
 // --- Main investigation endpoint ---
 app.post('/api/investigate', async (req, res) => {
-  const { url } = req.body;
-  if (!url) return res.status(400).json({ error: 'URL required' });
+  const { url, pastedText } = req.body;
+
+  if (!url && !pastedText) {
+    return res.status(400).json({ error: 'URL or job description required' });
+  }
+
+  const effectiveUrl = url ? normalizeUrl(url) : 'manual-entry-' + Date.now();
 
   try {
-    // Check if we've seen this URL before (MongoDB MCP pattern)
-    const existing = await db.collection('investigations').findOne({ url });
+    // Check MongoDB cache first
+    const existing = await db.collection('investigations').findOne({ url: effectiveUrl });
     if (existing) {
       console.log('📦 Returning cached investigation from MongoDB');
       return res.json({ ...existing, cached: true });
     }
 
-    // Scrape the job posting
-    console.log('🔍 Scraping job posting...');
-    const pageContent = await scrapeJobPosting(url);
+    // Determine content source
+    let pageContent = null;
+    let contentSource = '';
+
+    if (pastedText && pastedText.trim().length > 100) {
+      // User pasted job description directly
+      pageContent = pastedText.trim();
+      contentSource = 'pasted';
+      console.log('📋 Using pasted job description');
+    } else {
+      // Try scraping the URL
+      pageContent = await scrapeJobPosting(effectiveUrl);
+      contentSource = 'scraped';
+    }
+
+    // If no usable content — return helpful UNSCRAPABLE response
+    if (!pageContent) {
+      const record = {
+        url: effectiveUrl,
+        company: 'Could not detect',
+        role: 'Could not detect',
+        location: 'Unknown',
+        postedDate: 'Unknown',
+        applicantSignals: 'None detected',
+        redFlags: ['Site blocks automated scraping'],
+        greenFlags: [],
+        verdict: 'UNSCRAPABLE',
+        verdictReason: 'This site blocks automated scraping. Common with Oracle HCM, Workday, Greenhouse, Taleo, and ATS portals. The agent needs the job content to investigate.',
+        score: 0,
+        companyHealthSummary: 'Cannot determine without job content.',
+        recommendation: 'Copy and paste the full job description into the text box below the URL field, then click Investigate again.',
+        investigatedAt: new Date(),
+        cached: false,
+        contentSource: 'none'
+      };
+      await db.collection('investigations').insertOne(record);
+      return res.json(record);
+    }
 
     // Send to Gemini for investigation
+    console.log('🧠 Sending to Gemini for investigation...');
     const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
 
     const prompt = `
 You are JobLens, an AI agent that investigates job postings to determine if they are worth applying to.
 
-Analyze this job posting content and URL carefully:
-URL: ${url}
+Analyze this job posting carefully:
+URL: ${effectiveUrl}
+Content Source: ${contentSource}
 Content: ${pageContent}
 
 Investigate and return a JSON object with these exact fields:
@@ -70,7 +170,7 @@ Investigate and return a JSON object with these exact fields:
   "role": "job title",
   "location": "location or remote",
   "postedDate": "date posted or 'Unknown'",
-  "applicantSignals": "any signals about number of applicants",
+  "applicantSignals": "any signals about number of applicants or competition level",
   "redFlags": ["list", "of", "red", "flags"],
   "greenFlags": ["list", "of", "green", "flags"],
   "verdict": "APPLY" or "CAUTION" or "GHOST",
@@ -81,9 +181,15 @@ Investigate and return a JSON object with these exact fields:
 }
 
 Verdict guide:
-- APPLY: Fresh posting, reasonable competition, stable company signals
-- CAUTION: Some red flags but not disqualifying  
-- GHOST: Old posting, reposted multiple times, company issues, or likely already filled
+- APPLY: Fresh posting, reasonable competition, stable company, direct portal, clear role
+- CAUTION: Some red flags but role is legitimate — high competition, vague details, or minor company concerns
+- GHOST: Old posting, evergreen/always-open role, company layoffs/instability, likely already filled internally, or smart-apply black hole
+
+Important rules:
+- If content is from a direct company careers portal (Oracle HCM, Workday, Greenhouse) that is a GREEN flag
+- Smart-apply URLs from Indeed or LinkedIn with 200+ applicants are RED flags
+- Evergreen postings (always open, collect resumes) should be GHOST
+- Be specific — use actual company names, role titles, and signals from the content
 
 Return ONLY the JSON object, no markdown, no explanation.
     `;
@@ -96,24 +202,30 @@ Return ONLY the JSON object, no markdown, no explanation.
       const cleaned = responseText.replace(/```json|```/g, '').trim();
       investigation = JSON.parse(cleaned);
     } catch {
+      console.log('⚠️ JSON parse failed, using fallback');
       investigation = {
         company: 'Unknown',
         role: 'Unknown',
+        location: 'Unknown',
+        postedDate: 'Unknown',
+        applicantSignals: 'Unknown',
         verdict: 'CAUTION',
-        verdictReason: 'Could not fully parse job posting.',
+        verdictReason: 'Could not fully parse job posting. Review manually.',
         score: 50,
-        redFlags: [],
+        redFlags: ['Could not parse response'],
         greenFlags: [],
-        recommendation: 'Review manually.'
+        companyHealthSummary: 'Unknown',
+        recommendation: 'Review the job posting manually.'
       };
     }
 
-    // Save to MongoDB (this is the meaningful MCP integration)
+    // Save to MongoDB
     const record = {
-      url,
+      url: effectiveUrl,
       ...investigation,
       investigatedAt: new Date(),
-      cached: false
+      cached: false,
+      contentSource
     };
 
     await db.collection('investigations').insertOne(record);
@@ -127,7 +239,7 @@ Return ONLY the JSON object, no markdown, no explanation.
   }
 });
 
-// --- History endpoint (shows MongoDB value) ---
+// --- History endpoint ---
 app.get('/api/history', async (req, res) => {
   try {
     const history = await db.collection('investigations')
@@ -149,6 +261,31 @@ app.get('/api/stats', async (req, res) => {
     const ghost = await db.collection('investigations').countDocuments({ verdict: 'GHOST' });
     const caution = await db.collection('investigations').countDocuments({ verdict: 'CAUTION' });
     res.json({ total, apply, ghost, caution });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- Search endpoint (MongoDB intelligence layer) ---
+app.get('/api/search', async (req, res) => {
+  try {
+    const { verdict, company, q } = req.query;
+    const filter = {};
+    if (verdict) filter.verdict = verdict.toUpperCase();
+    if (company) filter.company = { $regex: company, $options: 'i' };
+    if (q) filter.$or = [
+      { role: { $regex: q, $options: 'i' } },
+      { company: { $regex: q, $options: 'i' } },
+      { recommendation: { $regex: q, $options: 'i' } }
+    ];
+
+    const results = await db.collection('investigations')
+      .find(filter)
+      .sort({ investigatedAt: -1 })
+      .limit(20)
+      .toArray();
+
+    res.json(results);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
