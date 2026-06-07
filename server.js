@@ -5,27 +5,69 @@ const { MongoClient } = require('mongodb');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const axios = require('axios');
 const cheerio = require('cheerio');
+const MongoMCPClient = require('./mcp');
 
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static('public'));
 
-// --- DB + Gemini setup ---
+// --- DB + Gemini + MCP setup ---
 const mongoClient = new MongoClient(process.env.MONGODB_URI);
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const mcpClient = new MongoMCPClient(process.env.MONGODB_URI);
 
 let db;
-mongoClient.connect().then(() => {
+
+async function initServices() {
+  await mongoClient.connect();
   db = mongoClient.db('joblens');
-  console.log('✅ MongoDB connected');
-});
+  console.log('✅ MongoDB driver connected');
+
+  try {
+    await mcpClient.connect();
+    console.log('✅ MongoDB MCP Server connected');
+  } catch (err) {
+    console.log('⚠️ MCP Server failed to start — using driver fallback:', err.message);
+  }
+}
+
+initServices();
+
+// --- Helper: save with MCP primary, driver fallback ---
+async function saveToMongo(record) {
+  const mcpResult = await mcpClient.saveInvestigation(record);
+  if (mcpResult !== null) {
+    return 'mcp';
+  }
+  await db.collection('investigations').insertOne(record);
+  console.log('💾 [Driver] Saved investigation to MongoDB');
+  return 'driver';
+}
+
+// --- Helper: fetch history with MCP primary, driver fallback ---
+async function getHistory() {
+  const mcpHistory = await mcpClient.getHistory(20);
+  if (mcpHistory !== null) return mcpHistory;
+  return db.collection('investigations')
+    .find({}).sort({ investigatedAt: -1 }).limit(20).toArray();
+}
+
+// --- Helper: fetch stats with MCP primary, driver fallback ---
+async function getStats() {
+  const mcpStats = await mcpClient.getStats();
+  if (mcpStats !== null) return mcpStats;
+  const total = await db.collection('investigations').countDocuments();
+  const apply = await db.collection('investigations').countDocuments({ verdict: 'APPLY' });
+  const ghost = await db.collection('investigations').countDocuments({ verdict: 'GHOST' });
+  const caution = await db.collection('investigations').countDocuments({ verdict: 'CAUTION' });
+  return { total, apply, caution, ghost };
+}
 
 // --- URL Normalization ---
 function normalizeUrl(url) {
   if (!url) return url;
 
-  // Indeed: smart-apply or vjk= param
   if (url.includes('indeed.com') && url.includes('vjk=')) {
     const vjkMatch = url.match(/vjk=([a-zA-Z0-9]+)/);
     if (vjkMatch) {
@@ -35,7 +77,6 @@ function normalizeUrl(url) {
     }
   }
 
-  // Indeed: viewjob with extra params - strip to just jk
   if (url.includes('indeed.com/viewjob')) {
     const jkMatch = url.match(/jk=([a-zA-Z0-9]+)/);
     if (jkMatch) {
@@ -45,7 +86,6 @@ function normalizeUrl(url) {
     }
   }
 
-  // LinkedIn: any format with a job ID
   if (url.includes('linkedin.com')) {
     const collectionMatch = url.match(/currentJobId=(\d+)/);
     const viewMatch = url.match(/\/jobs\/view\/(\d+)/);
@@ -66,28 +106,64 @@ async function scrapeJobPosting(url) {
   try {
     const { data } = await axios.get(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Sec-Fetch-User': '?1',
+        'Upgrade-Insecure-Requests': '1'
       },
       timeout: 15000,
       maxRedirects: 5
     });
 
     const $ = cheerio.load(data);
-    $('script, style, nav, footer, header, iframe, noscript').remove();
-    const text = $('body').text().replace(/\s+/g, ' ').trim().slice(0, 4000);
+    let scrapedText = null;
 
-    if (text.length < 200) {
+    // 1. The "Silver Bullet": Extract hidden SEO JobPosting metadata (JSON-LD)
+    let jsonLdText = '';
+    $('script[type="application/ld+json"]').each((i, el) => {
+      try {
+        const parsed = JSON.parse($(el).html());
+        const schemas = Array.isArray(parsed) ? parsed : [parsed];
+        for (const schema of schemas) {
+          if (schema['@type'] === 'JobPosting') {
+            jsonLdText += `${schema.title}\n${schema.description || ''}\n${schema.responsibilities || ''}\n${schema.qualifications || ''}`;
+          }
+        }
+      } catch (e) {
+        // Ignore parse errors on irrelevant JSON-LD blocks
+      }
+    });
+
+    if (jsonLdText.trim().length > 100) {
+      scrapedText = jsonLdText.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
+      console.log('✅ Scraped via JSON-LD JobPosting schema');
+    } else {
+      // 2. Fallback: Target standard job description containers
+      $('script, style, noscript, nav, footer, header, iframe').remove();
+      const targetedContent = $('main, #main, #content, .job-description, .posting-requirements, [data-ui="job-description"]').text();
+      
+      if (targetedContent.trim().length > 100) {
+        scrapedText = targetedContent.replace(/\s+/g, ' ').trim();
+        console.log('✅ Scraped via targeted HTML container');
+      } else {
+        // 3. Ultimate Fallback: Scrape the entire body
+        scrapedText = $('body').text().replace(/\s+/g, ' ').trim();
+        console.log('✅ Scraped via full body fallback');
+      }
+    }
+
+    if (!scrapedText || scrapedText.length < 200) {
       console.log('⚠️ Very little content scraped — site may be blocking');
       return null;
     }
 
-    console.log(`✅ Scraped ${text.length} characters`);
-    return text;
+    scrapedText = scrapedText.substring(0, 4000); // Keep payload manageable for Gemini
+    console.log(`✅ Final Scraped length: ${scrapedText.length} characters`);
+    return scrapedText;
 
   } catch (err) {
     console.log('❌ Scrape failed:', err.message);
@@ -106,8 +182,11 @@ app.post('/api/investigate', async (req, res) => {
   const effectiveUrl = url ? normalizeUrl(url) : 'manual-entry-' + Date.now();
 
   try {
-    // Check MongoDB cache first
-    const existing = await db.collection('investigations').findOne({ url: effectiveUrl });
+    // Check cache — MCP first, driver fallback
+    let existing = await mcpClient.findInvestigation(effectiveUrl);
+    if (!existing) {
+      existing = await db.collection('investigations').findOne({ url: effectiveUrl });
+    }
     if (existing) {
       console.log('📦 Returning cached investigation from MongoDB');
       return res.json({ ...existing, cached: true });
@@ -116,32 +195,27 @@ app.post('/api/investigate', async (req, res) => {
     // Determine content source
     let pageContent = null;
     let contentSource = '';
-
     const isManualEntry = effectiveUrl.startsWith('manual-entry-');
 
     if (isManualEntry && pastedText && pastedText.trim().length > 100) {
-    // No URL provided — use pasted text only
-    pageContent = pastedText.trim();
-    contentSource = 'pasted';
-    console.log('📋 Using pasted job description (no URL provided)');
+      pageContent = pastedText.trim();
+      contentSource = 'pasted';
+      console.log('📋 Using pasted job description');
     } else if (!isManualEntry && pastedText && pastedText.trim().length > 100) {
-    // Both URL and pasted text provided — try scraping first, fall back to pasted
-    console.log('🔍 URL provided — scraping first, ignoring pasted text...');
-    pageContent = await scrapeJobPosting(effectiveUrl);
-    contentSource = 'scraped';
-    if (!pageContent) {
-        // Scrape failed — now use pasted text as fallback
+      console.log('🔍 Scraping URL first, pasted text as fallback...');
+      pageContent = await scrapeJobPosting(effectiveUrl);
+      contentSource = 'scraped';
+      if (!pageContent) {
         pageContent = pastedText.trim();
         contentSource = 'pasted-fallback';
-        console.log('📋 Scrape failed — falling back to pasted text');
-    }
+        console.log('📋 Scrape failed — using pasted text');
+      }
     } else {
-    // URL only — scrape it
-    pageContent = await scrapeJobPosting(effectiveUrl);
-    contentSource = 'scraped';
+      pageContent = await scrapeJobPosting(effectiveUrl);
+      contentSource = 'scraped';
     }
 
-    // If no usable content — return helpful UNSCRAPABLE response
+    // No content — return UNSCRAPABLE
     if (!pageContent) {
       const record = {
         url: effectiveUrl,
@@ -153,7 +227,7 @@ app.post('/api/investigate', async (req, res) => {
         redFlags: ['Site blocks automated scraping'],
         greenFlags: [],
         verdict: 'UNSCRAPABLE',
-        verdictReason: 'This site blocks automated scraping. Common with Oracle HCM, Workday, Greenhouse, Taleo, and ATS portals. The agent needs the job content to investigate.',
+        verdictReason: 'This site blocks automated scraping. Common with Oracle HCM, Workday, Greenhouse, Taleo, and ATS portals.',
         score: 0,
         companyHealthSummary: 'Cannot determine without job content.',
         recommendation: 'Copy and paste the full job description into the text box below the URL field, then click Investigate again.',
@@ -161,11 +235,11 @@ app.post('/api/investigate', async (req, res) => {
         cached: false,
         contentSource: 'none'
       };
-      await db.collection('investigations').insertOne(record);
+      await saveToMongo(record);
       return res.json(record);
     }
 
-    // Send to Gemini for investigation
+    // Send to Gemini
     console.log('🧠 Sending to Gemini for investigation...');
     const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
 
@@ -199,9 +273,9 @@ Verdict guide:
 - GHOST: Old posting, evergreen/always-open role, company layoffs/instability, likely already filled internally, or smart-apply black hole
 
 Important rules:
-- If content is from a direct company careers portal (Oracle HCM, Workday, Greenhouse) that is a GREEN flag
-- Smart-apply URLs from Indeed or LinkedIn with 200+ applicants are RED flags
-- Evergreen postings (always open, collect resumes) should be GHOST
+- Direct company careers portal (Oracle HCM, Workday, Greenhouse) = GREEN flag
+- Smart-apply URLs with 200+ applicants = RED flag
+- Evergreen postings = GHOST
 - Be specific — use actual company names, role titles, and signals from the content
 
 Return ONLY the JSON object, no markdown, no explanation.
@@ -217,22 +291,16 @@ Return ONLY the JSON object, no markdown, no explanation.
     } catch {
       console.log('⚠️ JSON parse failed, using fallback');
       investigation = {
-        company: 'Unknown',
-        role: 'Unknown',
-        location: 'Unknown',
-        postedDate: 'Unknown',
-        applicantSignals: 'Unknown',
+        company: 'Unknown', role: 'Unknown', location: 'Unknown',
+        postedDate: 'Unknown', applicantSignals: 'Unknown',
         verdict: 'CAUTION',
         verdictReason: 'Could not fully parse job posting. Review manually.',
-        score: 50,
-        redFlags: ['Could not parse response'],
-        greenFlags: [],
+        score: 50, redFlags: ['Could not parse response'], greenFlags: [],
         companyHealthSummary: 'Unknown',
         recommendation: 'Review the job posting manually.'
       };
     }
 
-    // Save to MongoDB
     const record = {
       url: effectiveUrl,
       ...investigation,
@@ -241,9 +309,7 @@ Return ONLY the JSON object, no markdown, no explanation.
       contentSource
     };
 
-    await db.collection('investigations').insertOne(record);
-    console.log('💾 Saved investigation to MongoDB');
-
+    await saveToMongo(record);
     res.json(record);
 
   } catch (err) {
@@ -255,12 +321,7 @@ Return ONLY the JSON object, no markdown, no explanation.
 // --- History endpoint ---
 app.get('/api/history', async (req, res) => {
   try {
-    const history = await db.collection('investigations')
-      .find({})
-      .sort({ investigatedAt: -1 })
-      .limit(20)
-      .toArray();
-    res.json(history);
+    res.json(await getHistory());
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -269,17 +330,13 @@ app.get('/api/history', async (req, res) => {
 // --- Stats endpoint ---
 app.get('/api/stats', async (req, res) => {
   try {
-    const total = await db.collection('investigations').countDocuments();
-    const apply = await db.collection('investigations').countDocuments({ verdict: 'APPLY' });
-    const ghost = await db.collection('investigations').countDocuments({ verdict: 'GHOST' });
-    const caution = await db.collection('investigations').countDocuments({ verdict: 'CAUTION' });
-    res.json({ total, apply, ghost, caution });
+    res.json(await getStats());
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// --- Search endpoint (MongoDB intelligence layer) ---
+// --- Search endpoint ---
 app.get('/api/search', async (req, res) => {
   try {
     const { verdict, company, q } = req.query;
@@ -291,13 +348,8 @@ app.get('/api/search', async (req, res) => {
       { company: { $regex: q, $options: 'i' } },
       { recommendation: { $regex: q, $options: 'i' } }
     ];
-
     const results = await db.collection('investigations')
-      .find(filter)
-      .sort({ investigatedAt: -1 })
-      .limit(20)
-      .toArray();
-
+      .find(filter).sort({ investigatedAt: -1 }).limit(20).toArray();
     res.json(results);
   } catch (err) {
     res.status(500).json({ error: err.message });
