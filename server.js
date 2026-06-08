@@ -3,9 +3,12 @@ const express = require('express');
 const cors = require('cors');
 const { MongoClient } = require('mongodb');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const axios = require('axios');
-const cheerio = require('cheerio');
 const MongoMCPClient = require('./mcp');
+
+// Import Stealth Browser
+const puppeteer = require('puppeteer-extra');
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+puppeteer.use(StealthPlugin());
 
 const app = express();
 app.use(cors());
@@ -68,6 +71,7 @@ async function getStats() {
 function normalizeUrl(url) {
   if (!url) return url;
 
+  // Reverting to standard Indeed URLs since the Stealth browser handles them perfectly
   if (url.includes('indeed.com') && url.includes('vjk=')) {
     const vjkMatch = url.match(/vjk=([a-zA-Z0-9]+)/);
     if (vjkMatch) {
@@ -101,75 +105,129 @@ function normalizeUrl(url) {
   return url;
 }
 
-// --- Scrape job posting ---
+// --- Scrape job posting (Nuclear Stealth Option) ---
 async function scrapeJobPosting(url) {
+  let browser = null;
   try {
-    const { data } = await axios.get(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Sec-Fetch-Dest': 'document',
-        'Sec-Fetch-Mode': 'navigate',
-        'Sec-Fetch-Site': 'none',
-        'Sec-Fetch-User': '?1',
-        'Upgrade-Insecure-Requests': '1'
-      },
-      timeout: 15000,
-      maxRedirects: 5
+    console.log(`🕵️ Launching stealth browser for: ${url}`);
+    
+    // Launch headless Chromium with bot-evasion flags
+    browser = await puppeteer.launch({
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-blink-features=AutomationControlled',
+        '--disable-dev-shm-usage'
+      ]
     });
 
-    const $ = cheerio.load(data);
-    let scrapedText = null;
+    const page = await browser.newPage();
 
-    // 1. The "Silver Bullet": Extract hidden SEO JobPosting metadata (JSON-LD)
-    let jsonLdText = '';
-    $('script[type="application/ld+json"]').each((i, el) => {
-      try {
-        const parsed = JSON.parse($(el).html());
-        const schemas = Array.isArray(parsed) ? parsed : [parsed];
-        for (const schema of schemas) {
-          if (schema['@type'] === 'JobPosting') {
-            jsonLdText += `${schema.title}\n${schema.description || ''}\n${schema.responsibilities || ''}\n${schema.qualifications || ''}`;
-          }
-        }
-      } catch (e) {
-        // Ignore parse errors on irrelevant JSON-LD blocks
-      }
-    });
+    // Set standard Windows user agent
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36');
 
-    if (jsonLdText.trim().length > 100) {
-      scrapedText = jsonLdText.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
-      console.log('✅ Scraped via JSON-LD JobPosting schema');
-    } else {
-      // 2. Fallback: Target standard job description containers
-      $('script, style, noscript, nav, footer, header, iframe').remove();
-      const targetedContent = $('main, #main, #content, .job-description, .posting-requirements, [data-ui="job-description"]').text();
-      
-      if (targetedContent.trim().length > 100) {
-        scrapedText = targetedContent.replace(/\s+/g, ' ').trim();
-        console.log('✅ Scraped via targeted HTML container');
+    // Optimize speed: Block images, CSS, and media to save bandwidth
+    await page.setRequestInterception(true);
+    page.on('request', (req) => {
+      const type = req.resourceType();
+      if (['image', 'stylesheet', 'font', 'media'].includes(type)) {
+        req.abort();
       } else {
-        // 3. Ultimate Fallback: Scrape the entire body
-        scrapedText = $('body').text().replace(/\s+/g, ' ').trim();
-        console.log('✅ Scraped via full body fallback');
+        req.continue();
       }
-    }
+    });
 
-    if (!scrapedText || scrapedText.length < 200) {
-      console.log('⚠️ Very little content scraped — site may be blocking');
+    // Wait until network is mostly idle (Critical for rendering Workday/SPA sites)
+    await page.goto(url, { waitUntil: 'networkidle2', timeout: 20000 });
+
+    // Execute scraping logic natively inside the browser context
+    const result = await page.evaluate(() => {
+      // 1. Look for hidden JSON-LD Job Metadata (Best for Indeed)
+      let jsonLdText = '';
+      document.querySelectorAll('script[type="application/ld+json"]').forEach(el => {
+        try {
+          const parsed = JSON.parse(el.innerText);
+          const schemas = Array.isArray(parsed) ? parsed : [parsed];
+          schemas.forEach(schema => {
+            if (schema['@type'] === 'JobPosting') {
+              jsonLdText += `${schema.title}\n${schema.description || ''}\n${schema.responsibilities || ''}\n${schema.qualifications || ''}`;
+            }
+          });
+        } catch(e) {}
+      });
+
+      if (jsonLdText.trim().length > 100) {
+        return {
+          method: 'JSON-LD',
+          text: jsonLdText.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim()
+        };
+      }
+
+      // 2. Clean the DOM of junk tags
+      document.querySelectorAll('script, style, noscript, nav, footer, header, iframe').forEach(el => el.remove());
+
+      // 3. Target specific ATS containers (Workday, Greenhouse, etc)
+      const targeted = document.querySelector('main, #main, #content, .job-description, [data-ui="job-description"], #jobDescriptionText, [data-automation-id="jobPostingDescription"]');
+      if (targeted && targeted.innerText.trim().length > 100) {
+        return {
+          method: 'HTML Container',
+          text: targeted.innerText.trim().replace(/\s+/g, ' ')
+        };
+      }
+
+      // 4. Ultimate Fallback
+      return {
+        method: 'Body Text',
+        text: document.body.innerText.trim().replace(/\s+/g, ' ')
+      };
+    });
+
+    const scrapedText = result.text.substring(0, 4000);
+
+    // Fail-safe: Detect if DataDome managed to serve a Captcha instead of the job
+    const lowerText = scrapedText.toLowerCase();
+    if (lowerText.includes('verify you are human') || lowerText.includes('cloudflare') || lowerText.includes('datadome') || scrapedText.length < 150) {
+      console.log('⚠️ Captcha or Block detected.');
       return null;
     }
 
-    scrapedText = scrapedText.substring(0, 4000); // Keep payload manageable for Gemini
-    console.log(`✅ Final Scraped length: ${scrapedText.length} characters`);
+    console.log(`✅ Scraped via ${result.method}. Length: ${scrapedText.length} chars`);
     return scrapedText;
 
   } catch (err) {
-    console.log('❌ Scrape failed:', err.message);
+    console.log(`❌ Scrape failed for ${url}:`, err.message);
     return null;
+  } finally {
+    // ALWAYS clean up the browser to prevent memory leaks
+    if (browser) {
+      await browser.close();
+      console.log('🧹 Stealth browser closed.');
+    }
   }
 }
+
+// --- INTERNAL TOOL: Scraper for Vertex Agent ---
+app.post('/api/internal/scrape', async (req, res) => {
+  const { url } = req.body;
+  if (!url) return res.status(400).json({ error: 'URL required' });
+  
+  console.log('🤖 Vertex Agent requested a scrape for:', url);
+  const text = await scrapeJobPosting(url);
+  
+  if (!text) return res.json({ success: false, text: "Site blocked scraping." });
+  res.json({ success: true, text: text });
+});
+
+// --- INTERNAL TOOL: Save to DB for Vertex Agent ---
+app.post('/api/internal/save', async (req, res) => {
+  const record = req.body;
+  console.log('🤖 Vertex Agent requested to save record:', record.company);
+  
+  // Use your existing MCP saving logic
+  await saveToMongo(record);
+  res.json({ success: true, message: "Saved to MongoDB via MCP" });
+});
 
 // --- Main investigation endpoint ---
 app.post('/api/investigate', async (req, res) => {
@@ -182,7 +240,7 @@ app.post('/api/investigate', async (req, res) => {
   const effectiveUrl = url ? normalizeUrl(url) : 'manual-entry-' + Date.now();
 
   try {
-    // Check cache — MCP first, driver fallback
+    // Check cache
     let existing = await mcpClient.findInvestigation(effectiveUrl);
     if (!existing) {
       existing = await db.collection('investigations').findOne({ url: effectiveUrl });
@@ -192,7 +250,6 @@ app.post('/api/investigate', async (req, res) => {
       return res.json({ ...existing, cached: true });
     }
 
-    // Determine content source
     let pageContent = null;
     let contentSource = '';
     const isManualEntry = effectiveUrl.startsWith('manual-entry-');
@@ -215,31 +272,21 @@ app.post('/api/investigate', async (req, res) => {
       contentSource = 'scraped';
     }
 
-    // No content — return UNSCRAPABLE
     if (!pageContent) {
       const record = {
-        url: effectiveUrl,
-        company: 'Could not detect',
-        role: 'Could not detect',
-        location: 'Unknown',
-        postedDate: 'Unknown',
-        applicantSignals: 'None detected',
-        redFlags: ['Site blocks automated scraping'],
-        greenFlags: [],
+        url: effectiveUrl, company: 'Could not detect', role: 'Could not detect',
+        location: 'Unknown', postedDate: 'Unknown', applicantSignals: 'None detected',
+        redFlags: ['Site blocks automated scraping'], greenFlags: [],
         verdict: 'UNSCRAPABLE',
-        verdictReason: 'This site blocks automated scraping. Common with Oracle HCM, Workday, Greenhouse, Taleo, and ATS portals.',
-        score: 0,
-        companyHealthSummary: 'Cannot determine without job content.',
+        verdictReason: 'This site blocks automated scraping. Common with highly secure portals.',
+        score: 0, companyHealthSummary: 'Cannot determine without job content.',
         recommendation: 'Copy and paste the full job description into the text box below the URL field, then click Investigate again.',
-        investigatedAt: new Date(),
-        cached: false,
-        contentSource: 'none'
+        investigatedAt: new Date(), cached: false, contentSource: 'none'
       };
       await saveToMongo(record);
       return res.json(record);
     }
 
-    // Send to Gemini
     console.log('🧠 Sending to Gemini for investigation...');
     const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
 
@@ -292,21 +339,16 @@ Return ONLY the JSON object, no markdown, no explanation.
       console.log('⚠️ JSON parse failed, using fallback');
       investigation = {
         company: 'Unknown', role: 'Unknown', location: 'Unknown',
-        postedDate: 'Unknown', applicantSignals: 'Unknown',
-        verdict: 'CAUTION',
+        postedDate: 'Unknown', applicantSignals: 'Unknown', verdict: 'CAUTION',
         verdictReason: 'Could not fully parse job posting. Review manually.',
         score: 50, redFlags: ['Could not parse response'], greenFlags: [],
-        companyHealthSummary: 'Unknown',
-        recommendation: 'Review the job posting manually.'
+        companyHealthSummary: 'Unknown', recommendation: 'Review the job posting manually.'
       };
     }
 
     const record = {
-      url: effectiveUrl,
-      ...investigation,
-      investigatedAt: new Date(),
-      cached: false,
-      contentSource
+      url: effectiveUrl, ...investigation,
+      investigatedAt: new Date(), cached: false, contentSource
     };
 
     await saveToMongo(record);
@@ -318,25 +360,16 @@ Return ONLY the JSON object, no markdown, no explanation.
   }
 });
 
-// --- History endpoint ---
 app.get('/api/history', async (req, res) => {
-  try {
-    res.json(await getHistory());
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  try { res.json(await getHistory()); } 
+  catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// --- Stats endpoint ---
 app.get('/api/stats', async (req, res) => {
-  try {
-    res.json(await getStats());
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  try { res.json(await getStats()); } 
+  catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// --- Search endpoint ---
 app.get('/api/search', async (req, res) => {
   try {
     const { verdict, company, q } = req.query;
@@ -351,9 +384,7 @@ app.get('/api/search', async (req, res) => {
     const results = await db.collection('investigations')
       .find(filter).sort({ investigatedAt: -1 }).limit(20).toArray();
     res.json(results);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 const PORT = process.env.PORT || 3000;
